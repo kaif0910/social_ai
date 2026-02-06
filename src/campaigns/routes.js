@@ -1,0 +1,35 @@
+const express = require("express");
+const pool = require("../db");
+const generateReply = require("../ai/reply");
+
+const router = express.Router();
+
+/* Create campaign */
+router.post("/", async (req, res) => {
+  const { name, brand_voice, tone, niche } = req.body;
+
+  const result = await pool.query(
+    "INSERT INTO campaigns (name, brand_voice, tone, niche) VALUES ($1,$2,$3,$4) RETURNING *",
+    [name, brand_voice, tone, niche]
+  );
+
+  res.json(result.rows[0]);
+});
+
+/* Generate reply using campaign */
+router.post("/:id/reply", async (req, res) => {
+  const { id } = req.params;
+  const { comment } = req.body;
+
+  const campaign = await pool.query("SELECT * FROM campaigns WHERE id=$1", [id]);
+
+  if (campaign.rows.length === 0) {
+    return res.status(404).json({ error: "Campaign not found" });
+  }
+
+  const reply = await generateReply(comment, campaign.rows[0]);
+
+  res.json({ reply });
+});
+
+module.exports = router;
