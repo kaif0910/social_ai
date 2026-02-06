@@ -12,6 +12,10 @@ app.use(express.json());
 const postRoutes = require("./src/posts/routes");
 app.use("/posts", postRoutes);
 
+const redditRoutes = require("./src/reddit/routes");
+app.use("/reddit", redditRoutes);
+
+
 app.get("/", (req, res) => {
   res.send("Social AI Manager running 🚀");
 });
