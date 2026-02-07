@@ -12,12 +12,15 @@ app.use(express.json());
 const postRoutes = require("./src/posts/routes");
 app.use("/posts", postRoutes);
 
-const redditRoutes = require("./src/reddit/routes");
-app.use("/reddit", redditRoutes);
+
+
+const analyzeRoutes = require("./src/analyze/routes");
+app.use("/analyze", analyzeRoutes);
+
 
 
 app.get("/", (req, res) => {
-  res.send("Social AI Manager running 🚀");
+  res.send("Social AI Manager running 🚀");//health check
 });
 
 app.use("/campaigns", campaignRoutes);
