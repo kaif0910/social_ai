@@ -74,4 +74,34 @@ router.get("/:id/summary", async (req, res) => {
   }
 });
 
+/**
+ * GET /projects/:id/sentiment-trend
+ */
+router.get("/:id/sentiment-trend", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const trend = await pool.query(
+      `
+      SELECT
+        DATE(created_at) as date,
+        SUM(agreement) as agreement,
+        SUM(neutral) as neutral,
+        SUM(disagreement) as disagreement
+      FROM post_feedback
+      WHERE project_id = $1
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+      `,
+      [id]
+    );
+
+    res.json(trend.rows);
+  } catch (err) {
+    console.error("Sentiment trend error:", err);
+    res.status(500).json({ error: "Failed to fetch sentiment trend" });
+  }
+});
+
+
 module.exports = router;
