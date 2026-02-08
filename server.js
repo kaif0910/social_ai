@@ -11,8 +11,10 @@ app.use(cors());
 app.use(express.json());
 const postRoutes = require("./src/posts/routes");
 const projectRoutes = require("./src/projects/routes");
+const copilotRoutes = require("./src/copilot/routes");
 app.use("/projects", projectRoutes);
 app.use("/posts", postRoutes);
+app.use("/copilot", copilotRoutes);
 
 const postFeedbackRoutes = require("./src/postFeedback/routes");
 app.use("/analyze/post", postFeedbackRoutes);
