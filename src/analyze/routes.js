@@ -65,4 +65,33 @@ await pool.query(
   }
 });
 
+
+router.get("/", async (req, res) => {
+  const pool = require("../db");
+  try {
+    const result = await pool.query(
+        "SELECT * FROM analyses ORDER BY created_at DESC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("🔥 Fetch analyses error:", err);
+    res.status(500).json({ error: "Failed to fetch analyses" });
+  }
+});
+
+router.get("/:id", async (req, res) => {
+  const pool = require("../db");
+  const { id } = req.params;
+  try {
+    const result = await pool.query("SELECT * FROM analyses WHERE id = $1", [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Analysis not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("🔥 Fetch analysis error:", err);
+    res.status(500).json({ error: "Failed to fetch analysis" });
+  }
+});
+
 module.exports = router;

@@ -12,6 +12,8 @@ app.use(express.json());
 const postRoutes = require("./src/posts/routes");
 app.use("/posts", postRoutes);
 
+const postFeedbackRoutes = require("./src/postFeedback/routes");
+app.use("/analyze/post", postFeedbackRoutes);
 
 
 const analyzeRoutes = require("./src/analyze/routes");
