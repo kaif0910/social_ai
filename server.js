@@ -10,6 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 const postRoutes = require("./src/posts/routes");
+const projectRoutes = require("./src/projects/routes");
+app.use("/projects", projectRoutes);
 app.use("/posts", postRoutes);
 
 const postFeedbackRoutes = require("./src/postFeedback/routes");
