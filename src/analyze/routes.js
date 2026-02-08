@@ -36,6 +36,25 @@ router.post("/", async (req, res) => {
 
     console.log("✅ AI analysis done");
 
+    const pool = require("../db");
+
+// save to DB
+await pool.query(
+  `INSERT INTO analyses 
+  (product_idea, subreddit, sentiment_positive, sentiment_neutral, sentiment_negative, feature_clusters, insights)
+  VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+  [
+    productIdea,
+    subreddit || "all",
+    insights.sentiment.positive,
+    insights.sentiment.neutral,
+    insights.sentiment.negative,
+    JSON.stringify(insights.top_features),
+    insights.insights,
+  ]
+);
+
+
     res.json({
       totalCommentsAnalyzed: comments.length,
       insights,
