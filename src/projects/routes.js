@@ -1,6 +1,6 @@
 const express = require("express");
 const pool = require("../db");
-const runFullAnalysis = require("./fullAnalysis");
+const runFullAnalysis = require("../ai/runFullAnalysis");
 
 const router = express.Router();
 
@@ -37,9 +37,15 @@ router.post("/:id/full-analysis", async (req, res) => {
     const result = await runFullAnalysis(id, redditPostUrl);
     res.json(result);
   } catch (err) {
-    console.error("Full analysis error:", err);
-    res.status(500).json({ error: "Failed to run full analysis" });
-  }
+  console.error("❌ Full analysis error:", err);
+
+  res.status(500).json({
+    error: "Failed to run full analysis",
+    realError: err.message,   // 👈 THIS IS THE KEY
+    stack: err.stack,         // optional but useful
+  });
+}
+
 });
 
 /**
@@ -51,18 +57,36 @@ router.get("/:id/analysis", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT last_analysis, last_clusters, last_roadmap
-       FROM projects
-       WHERE id = $1`,
+      `
+      SELECT *
+      FROM analyses
+      WHERE project_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
       [id]
     );
 
-    res.json(result.rows[0]);
+    // ✅ ALWAYS return JSON
+    if (result.rows.length === 0) {
+      return res.json({ last_roadmap: null });
+    }
+
+    const analysis = result.rows[0];
+
+    return res.json({
+      last_roadmap: analysis.roadmap ? JSON.parse(analysis.roadmap) : null,
+    });
   } catch (err) {
     console.error("Get analysis error:", err);
-    res.status(500).json({ error: "Failed to fetch analysis" });
+
+    return res.status(500).json({
+      error: "Failed to fetch analysis",
+      realError: err.message,
+    });
   }
 });
+
 
 /**
  * GET /projects/:id/summary

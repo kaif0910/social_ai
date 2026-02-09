@@ -5,66 +5,52 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-async function analyzeFeedback(productIdea, comments) {
+async function analyzeFeedback(comments) {
   try {
-    // keep prompt small for speed
-    const joinedComments = comments
-      .slice(0, 20)
-      .map((c) => c.slice(0, 200))
-      .join("\n- ");
+    if (!Array.isArray(comments) || comments.length === 0) {
+      throw new Error("No comments provided to analyzeFeedback");
+    }
 
-    const completion = await groq.chat.completions.create({
-  model: "llama-3.1-8b-instant",
-  temperature: 0.3,
-  messages: [
-    {
-      role: "system",
-      content:
-        "You are an expert startup analyst. Always return VALID JSON only.",
-    },
-    {
-      role: "user",
-      content: `
-A founder is building this product:
-"${productIdea}"
+    const sample = comments.slice(0, 50).join("\n");
 
-Here are real user discussions:
-- ${joinedComments}
+    const prompt = `
+You are a startup advisor AI.
 
-Return STRICT JSON in this format:
-
+Analyze these real user comments and return STRICT JSON with:
 {
-  "sentiment": {
-    "positive": number,
-    "neutral": number,
-    "negative": number
-  },
-  "top_features": [
-    { "feature": "string", "mentions": number }
-  ],
-  "insights": "short clear paragraph of key learnings"
+  "summary": "...",
+  "agreement": number,
+  "neutral": number,
+  "disagreement": number,
+  "top_requested_change": "...",
+  "recommended_next_feature": "..."
 }
 
-Rules:
-- Numbers must be realistic counts
-- Max 5 features
-- No extra text outside JSON
-`,
-    },
-  ],
-});
+Comments:
+${sample}
+`;
 
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant", // fast & free on Groq
+      messages: [
+        { role: "system", content: "You are a precise JSON generator." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.2,
+    });
 
-    const text = completion.choices[0].message.content.trim();
+    const text = completion.choices[0].message.content;
 
-// remove possible ```json ``` wrappers
-const clean = text.replace(/```json|```/g, "");
+    // 🛡️ Safe JSON parse
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}");
 
-return JSON.parse(clean);
+    const cleanJson = text.slice(jsonStart, jsonEnd + 1);
 
-  } catch (error) {
-    console.error("Groq analysis error:", error);
-    throw error;
+    return JSON.parse(cleanJson);
+  } catch (err) {
+    console.error("Groq analysis error:", err);
+    throw err;
   }
 }
 
