@@ -12,9 +12,14 @@ app.use(express.json());
 const postRoutes = require("./src/posts/routes");
 const projectRoutes = require("./src/projects/routes");
 const copilotRoutes = require("./src/copilot/routes");
+const clusterRoutes = require("./src/cluster/routes");
+const roadmapRoutes = require("./src/roadmap/routes");
 app.use("/projects", projectRoutes);
 app.use("/posts", postRoutes);
 app.use("/copilot", copilotRoutes);
+app.use("/cluster", clusterRoutes);
+app.use("/roadmap", roadmapRoutes);
+
 
 const postFeedbackRoutes = require("./src/postFeedback/routes");
 app.use("/analyze/post", postFeedbackRoutes);

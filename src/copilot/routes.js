@@ -1,5 +1,6 @@
 const express = require("express");
 const generatePost = require("./generatePost");
+const fetchPostComments = require("../reddit/fetchPostComments");
 
 const router = express.Router();
 
@@ -30,7 +31,9 @@ const generateReplies = require("./generateReplies");
  * POST /copilot/replies
  */
 router.post("/replies", async (req, res) => {
-  const { featureContext, comments } = req.body;
+
+  const comments = await fetchPostComments(req.body.postUrl);
+  const { featureContext } = req.body;
 
   if (!featureContext || !comments || !Array.isArray(comments)) {
     return res.status(400).json({

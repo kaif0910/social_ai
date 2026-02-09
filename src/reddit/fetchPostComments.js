@@ -1,37 +1,47 @@
 const axios = require("axios");
 
 /**
- * Fetch comments from a specific Reddit post URL (safe version)
+ * Fetch ALL top-level comments from a Reddit post using pagination
  */
-async function fetchPostComments(postUrl) {
+async function fetchPostComments(postUrl, maxComments = 200) {
   try {
-    // 1️⃣ remove query params like ?utm_source=...
     const cleanUrl = postUrl.split("?")[0];
+    const baseJsonUrl = cleanUrl.replace(/\/$/, "") + ".json";
 
-    // 2️⃣ ensure .json endpoint
-    const jsonUrl = cleanUrl.replace(/\/$/, "") + ".json";
+    let after = null;
+    let allComments = [];
 
-    const res = await axios.get(jsonUrl, {
-      headers: { "User-Agent": "founder-feedback-engine" },
-    });
+    while (allComments.length < maxComments) {
+      const url = after ? `${baseJsonUrl}?after=${after}` : baseJsonUrl;
 
-    // 3️⃣ validate structure safely
-    if (
-      !res.data ||
-      !Array.isArray(res.data) ||
-      !res.data[1] ||
-      !res.data[1].data ||
-      !res.data[1].data.children
-    ) {
-      return [];
+      const res = await axios.get(url, {
+        headers: { "User-Agent": "founder-feedback-engine" },
+      });
+
+      if (
+        !res.data ||
+        !Array.isArray(res.data) ||
+        !res.data[1]?.data?.children
+      ) {
+        break;
+      }
+
+      const children = res.data[1].data.children;
+
+      const newComments = children
+        .map((c) => c.data?.body)
+        .filter(Boolean);
+
+      allComments.push(...newComments);
+
+      // pagination cursor
+      after = res.data[1].data.after;
+
+      // stop if no more pages
+      if (!after) break;
     }
 
-    // 4️⃣ extract comment bodies
-    const comments = res.data[1].data.children
-      .map((c) => c.data?.body)
-      .filter(Boolean);
-
-    return comments.slice(0, 50);
+    return allComments.slice(0, maxComments);
   } catch (err) {
     console.error("Fetch post comments error:", err.message);
     return [];

@@ -1,16 +1,77 @@
 const express = require("express");
 const pool = require("../db");
+const runFullAnalysis = require("./fullAnalysis");
 
 const router = express.Router();
 
 /**
+ * GET /projects
+ * List all projects
+ */
+router.get("/", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, created_at FROM projects ORDER BY created_at DESC`
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Get projects error:", err);
+    res.status(500).json({ error: "Failed to fetch projects" });
+  }
+});
+
+/**
+ * POST /projects/:id/full-analysis
+ * Runs full AI pipeline
+ */
+router.post("/:id/full-analysis", async (req, res) => {
+  const { id } = req.params;
+  const { redditPostUrl } = req.body;
+
+  if (!redditPostUrl) {
+    return res.status(400).json({ error: "redditPostUrl required" });
+  }
+
+  try {
+    const result = await runFullAnalysis(id, redditPostUrl);
+    res.json(result);
+  } catch (err) {
+    console.error("Full analysis error:", err);
+    res.status(500).json({ error: "Failed to run full analysis" });
+  }
+});
+
+/**
+ * GET /projects/:id/analysis
+ * Returns saved AI results
+ */
+router.get("/:id/analysis", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT last_analysis, last_clusters, last_roadmap
+       FROM projects
+       WHERE id = $1`,
+      [id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Get analysis error:", err);
+    res.status(500).json({ error: "Failed to fetch analysis" });
+  }
+});
+
+/**
  * GET /projects/:id/summary
+ * Dashboard overview stats
  */
 router.get("/:id/summary", async (req, res) => {
   const { id } = req.params;
 
   try {
-    // 1️⃣ total counts
     const analysesCount = await pool.query(
       "SELECT COUNT(*) FROM analyses WHERE project_id = $1",
       [id]
@@ -21,7 +82,6 @@ router.get("/:id/summary", async (req, res) => {
       [id]
     );
 
-    // 2️⃣ overall sentiment from post_feedback
     const sentiment = await pool.query(
       `
       SELECT
@@ -34,7 +94,6 @@ router.get("/:id/summary", async (req, res) => {
       [id]
     );
 
-    // 3️⃣ most requested change
     const topChange = await pool.query(
       `
       SELECT top_requested_change, COUNT(*) as count
@@ -47,7 +106,6 @@ router.get("/:id/summary", async (req, res) => {
       [id]
     );
 
-    // 4️⃣ latest recommendation
     const latestRecommendation = await pool.query(
       `
       SELECT recommended_next_feature
@@ -62,9 +120,7 @@ router.get("/:id/summary", async (req, res) => {
     res.json({
       totalAnalyses: Number(analysesCount.rows[0].count),
       totalFeedbackPosts: Number(feedbackCount.rows[0].count),
-
       sentiment: sentiment.rows[0],
-
       mostRequestedChange: topChange.rows[0] || null,
       latestRecommendation: latestRecommendation.rows[0] || null,
     });
@@ -76,6 +132,7 @@ router.get("/:id/summary", async (req, res) => {
 
 /**
  * GET /projects/:id/sentiment-trend
+ * For chart visualization
  */
 router.get("/:id/sentiment-trend", async (req, res) => {
   const { id } = req.params;
@@ -102,6 +159,5 @@ router.get("/:id/sentiment-trend", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch sentiment trend" });
   }
 });
-
 
 module.exports = router;
