@@ -11,13 +11,138 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, created_at FROM projects ORDER BY created_at DESC`
+      `SELECT id, name, description, created_at FROM projects ORDER BY created_at DESC`
     );
 
     res.json(result.rows);
   } catch (err) {
     console.error("Get projects error:", err);
     res.status(500).json({ error: "Failed to fetch projects" });
+  }
+});
+
+/**
+ * POST /projects
+ * Create a new project
+ */
+router.post("/", async (req, res) => {
+  const { name, description } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: "name is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO projects (name, description) VALUES ($1, $2) RETURNING *`,
+      [name, description || null]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Create project error:", err);
+    res.status(500).json({ error: "Failed to create project" });
+  }
+});
+
+/**
+ * GET /projects/:id
+ * Get a single project by ID
+ */
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM projects WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Get project error:", err);
+    res.status(500).json({ error: "Failed to fetch project" });
+  }
+});
+
+/**
+ * PUT /projects/:id
+ * Update a project
+ */
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, description } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: "name is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE projects SET name = $1, description = $2 WHERE id = $3 RETURNING *`,
+      [name, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Update project error:", err);
+    res.status(500).json({ error: "Failed to update project" });
+  }
+});
+
+/**
+ * DELETE /projects/:id
+ * Delete a project and its related data
+ */
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Delete related data first
+    await pool.query("DELETE FROM post_feedback WHERE project_id = $1", [id]);
+    await pool.query("DELETE FROM analyses WHERE project_id = $1", [id]);
+
+    const result = await pool.query(
+      "DELETE FROM projects WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    res.json({ message: "Project deleted", project: result.rows[0] });
+  } catch (err) {
+    console.error("Delete project error:", err);
+    res.status(500).json({ error: "Failed to delete project" });
+  }
+});
+
+/**
+ * GET /projects/:id/feedback
+ * List all post feedback for a project
+ */
+router.get("/:id/feedback", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM post_feedback WHERE project_id = $1 ORDER BY created_at DESC`,
+      [id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Get project feedback error:", err);
+    res.status(500).json({ error: "Failed to fetch project feedback" });
   }
 });
 
