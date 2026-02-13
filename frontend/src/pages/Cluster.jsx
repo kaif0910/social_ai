@@ -226,7 +226,7 @@ export default function Cluster() {
 
           {/* Top Priority */}
           {topPriority && (
-            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+            <div className="p-4 rounded-xl bg-linear-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
                   <Star className="w-5 h-5 text-amber-400" />

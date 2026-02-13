@@ -1,12 +1,19 @@
 const Groq = require("groq-sdk");
+const safeParseJSON = require("./safeParseJSON");
 require("dotenv").config();
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-async function analyzeFeedback(comments) {
+async function analyzeFeedback(productIdea, comments) {
   try {
+    // Support both (productIdea, comments) and (comments) signatures
+    if (Array.isArray(productIdea) && !comments) {
+      comments = productIdea;
+      productIdea = null;
+    }
+
     if (!Array.isArray(comments) || comments.length === 0) {
       throw new Error("No comments provided to analyzeFeedback");
     }
@@ -14,17 +21,25 @@ async function analyzeFeedback(comments) {
     const sample = comments.slice(0, 50).join("\n");
 
     const prompt = `
-You are a startup advisor AI.
+You are a startup advisor AI.${productIdea ? `\n\nProduct idea being analyzed: "${productIdea}"` : ''}
 
 Analyze these real user comments and return STRICT JSON with:
 {
   "summary": "...",
-  "agreement": number,
-  "neutral": number,
-  "disagreement": number,
-  "top_requested_change": "...",
-  "recommended_next_feature": "..."
+  "sentiment": {
+    "positive": number,
+    "neutral": number,
+    "negative": number
+  },
+  "top_features": ["feature1", "feature2", "feature3"],
+  "insights": "key takeaway paragraph"
 }
+
+Rules:
+- sentiment numbers must reflect comment distribution
+- top_features should be max 5 most-mentioned features
+- insights should be a concise strategic summary
+- No text outside JSON
 
 Comments:
 ${sample}
@@ -41,13 +56,7 @@ ${sample}
 
     const text = completion.choices[0].message.content;
 
-    // 🛡️ Safe JSON parse
-    const jsonStart = text.indexOf("{");
-    const jsonEnd = text.lastIndexOf("}");
-
-    const cleanJson = text.slice(jsonStart, jsonEnd + 1);
-
-    return JSON.parse(cleanJson);
+    return safeParseJSON(text);
   } catch (err) {
     console.error("Groq analysis error:", err);
     throw err;

@@ -31,17 +31,23 @@ const generateReplies = require("./generateReplies");
  * POST /copilot/replies
  */
 router.post("/replies", async (req, res) => {
+  const { postUrl, featureContext } = req.body;
 
-  const comments = await fetchPostComments(req.body.postUrl);
-  const { featureContext } = req.body;
-
-  if (!featureContext || !comments || !Array.isArray(comments)) {
+  if (!postUrl || !featureContext) {
     return res.status(400).json({
-      error: "featureContext and comments[] are required",
+      error: "postUrl and featureContext are required",
     });
   }
 
   try {
+    const comments = await fetchPostComments(postUrl);
+
+    if (!comments || comments.length === 0) {
+      return res.status(400).json({
+        error: "No comments found on this Reddit post",
+      });
+    }
+
     const result = await generateReplies({ featureContext, comments });
     res.json(result);
   } catch (err) {

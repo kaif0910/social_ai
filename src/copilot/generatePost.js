@@ -1,4 +1,5 @@
 const Groq = require("groq-sdk");
+const safeParseJSON = require("../ai/safeParseJSON");
 require("dotenv").config();
 
 const groq = new Groq({
@@ -52,9 +53,8 @@ Rules:
   });
 
   const text = completion.choices[0].message.content.trim();
-  const clean = text.replace(/```json|```/g, "");
 
-  return JSON.parse(clean);
+  return safeParseJSON(text);
 }
 
 module.exports = generatePost;

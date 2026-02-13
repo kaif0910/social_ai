@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createCampaign, generateCampaignReply, generatePost } from '../api';
 import Card from '../components/Card';
+import { useToast } from '../components/useToast';
 import {
   Megaphone,
   MessageSquare,
@@ -38,6 +39,7 @@ export default function Campaigns() {
   const [error, setError] = useState({ create: null, reply: null, post: null });
   const [copiedReply, setCopiedReply] = useState(false);
   const [copiedPost, setCopiedPost] = useState(false);
+  const toast = useToast();
 
   const handleCreate = async () => {
     setLoading((l) => ({ ...l, create: true }));
@@ -45,6 +47,7 @@ export default function Campaigns() {
     try {
       const res = await createCampaign(campaignForm);
       setCreatedCampaign(res.data);
+      toast.success('Campaign created successfully');
     } catch (err) {
       console.error(err);
       setError((e) => ({
@@ -65,6 +68,7 @@ export default function Campaigns() {
         replyForm.comment
       );
       setGeneratedReply(res.data);
+      toast.success('Reply generated');
     } catch (err) {
       console.error(err);
       setError((e) => ({
@@ -82,6 +86,7 @@ export default function Campaigns() {
     try {
       const res = await generatePost(postCampaignId);
       setGeneratedPost(res.data);
+      toast.success('Post generated');
     } catch (err) {
       console.error(err);
       setError((e) => ({

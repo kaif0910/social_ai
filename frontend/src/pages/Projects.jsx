@@ -10,6 +10,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useToast } from '../components/useToast';
 import {
   FolderKanban,
   Plus,
@@ -33,6 +34,7 @@ export default function Projects() {
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const toast = useToast();
 
   const loadProjects = () => {
     setLoading(true);
@@ -66,8 +68,10 @@ export default function Projects() {
     try {
       if (editingProject) {
         await updateProject(editingProject.id, form);
+        toast.success('Project updated successfully');
       } else {
         await createProject(form);
+        toast.success('Project created successfully');
       }
       setModalOpen(false);
       loadProjects();
@@ -84,6 +88,7 @@ export default function Projects() {
     try {
       await deleteProject(deleteConfirm.id);
       setDeleteConfirm(null);
+      toast.success('Project deleted');
       loadProjects();
     } catch (err) {
       console.error(err);

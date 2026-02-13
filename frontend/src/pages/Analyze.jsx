@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import SentimentBar from '../components/SentimentBar';
 import EmptyState from '../components/EmptyState';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useToast } from '../components/useToast';
 import { BarChart3, Search, ArrowRight, Clock, Loader2 } from 'lucide-react';
 import {
   PieChart,
@@ -23,6 +24,7 @@ export default function Analyze() {
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState({ run: false, list: true });
   const [error, setError] = useState(null);
+  const toast = useToast();
 
   useEffect(() => {
     getAnalyses()
@@ -39,11 +41,14 @@ export default function Analyze() {
       const res = await runAnalysis(form);
       setResult(res.data);
       setForm({ productIdea: '', subreddit: '' });
+      toast.success('Analysis completed successfully!', 'Feedback Analyzed');
       const listRes = await getAnalyses();
       setAnalyses(listRes.data);
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || 'Analysis failed. Please try again.');
+      const msg = err.response?.data?.error || 'Analysis failed. Please try again.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading((l) => ({ ...l, run: false }));
     }

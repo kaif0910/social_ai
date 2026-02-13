@@ -46,11 +46,11 @@ await pool.query(
   [
     productIdea,
     subreddit || "all",
-    insights.sentiment.positive,
-    insights.sentiment.neutral,
-    insights.sentiment.negative,
-    JSON.stringify(insights.top_features),
-    insights.insights,
+    insights.sentiment?.positive ?? 0,
+    insights.sentiment?.neutral ?? 0,
+    insights.sentiment?.negative ?? 0,
+    JSON.stringify(insights.top_features || []),
+    insights.insights || insights.summary || "",
   ]
 );
 

@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastProvider } from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -10,25 +12,31 @@ import AnalysisDetail from './pages/AnalysisDetail';
 import PostFeedback from './pages/PostFeedback';
 import Cluster from './pages/Cluster';
 import Roadmap from './pages/Roadmap';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:id" element={<ProjectDetail />} />
-          <Route path="/campaigns" element={<Campaigns />} />
-          <Route path="/copilot" element={<Copilot />} />
-          <Route path="/analyze" element={<Analyze />} />
-          <Route path="/analyze/:id" element={<AnalysisDetail />} />
-          <Route path="/post-feedback" element={<PostFeedback />} />
-          <Route path="/cluster" element={<Cluster />} />
-          <Route path="/roadmap" element={<Roadmap />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <ToastProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/copilot" element={<Copilot />} />
+              <Route path="/analyze" element={<Analyze />} />
+              <Route path="/analyze/:id" element={<AnalysisDetail />} />
+              <Route path="/post-feedback" element={<PostFeedback />} />
+              <Route path="/cluster" element={<Cluster />} />
+              <Route path="/roadmap" element={<Roadmap />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

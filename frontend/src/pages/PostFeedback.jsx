@@ -3,6 +3,7 @@ import { analyzePostFeedback, getProjects } from '../api';
 import Card from '../components/Card';
 import SentimentBar from '../components/SentimentBar';
 import EmptyState from '../components/EmptyState';
+import { useToast } from '../components/useToast';
 import { MessageSquare, Search, Loader2, LinkIcon, Lightbulb, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import {
   BarChart,
@@ -26,6 +27,7 @@ export default function PostFeedback() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
+  const toast = useToast();
 
   useEffect(() => {
     getProjects()
@@ -40,6 +42,7 @@ export default function PostFeedback() {
     try {
       const res = await analyzePostFeedback(form);
       setResult(res.data);
+      toast.success('Post feedback analyzed!', 'Analysis Complete');
       setHistory((h) => [
         {
           ...res.data,
