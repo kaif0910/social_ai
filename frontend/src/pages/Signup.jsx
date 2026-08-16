@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/useToast';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Bot, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export default function Signup() {
@@ -178,6 +179,9 @@ export default function Signup() {
               </button>
             </div>
           </form>
+
+          {/* Google OAuth Sign-Up */}
+          <GoogleAuthButton />
 
           <div className="mt-6 pt-5 border-t border-zinc-800 flex items-center gap-2 text-xs text-zinc-400 justify-center">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />

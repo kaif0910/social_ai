@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/useToast';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Bot, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, CloudCog } from 'lucide-react';
 
 export default function Login() {
@@ -142,6 +143,9 @@ export default function Login() {
               )}
             </button>
           </form>
+
+          {/* Google OAuth Sign-In */}
+          <GoogleAuthButton />
 
           {/* Quick Demo Fill Helper */}
           <div className="mt-6 pt-6 border-t border-zinc-800 flex items-center justify-between text-xs">

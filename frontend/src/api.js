@@ -35,6 +35,7 @@ api.interceptors.response.use(
 // ── Auth APIs ──
 export const loginApi = (credentials) => api.post('/auth/login', credentials);
 export const signupApi = (userData) => api.post('/auth/signup', userData);
+export const googleLoginApi = (credential) => api.post('/auth/google', { credential });
 export const getMeApi = () => api.get('/auth/me');
 
 // ── Projects CRUD ──

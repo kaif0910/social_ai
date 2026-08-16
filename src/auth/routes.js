@@ -1,6 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
+const { OAuth2Client } = require("google-auth-library");
 const pool = require("../db");
 const { authenticateToken, JWT_SECRET } = require("../middleware/auth");
 
@@ -109,6 +111,90 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "Authentication failed. Please try again." });
+  }
+});
+
+/**
+ * POST /auth/google
+ * Authenticate or register a user via Google OAuth ID Token
+ */
+router.post("/google", async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ error: "Google credential token is required." });
+  }
+
+  try {
+    let payload;
+
+    // First attempt verification using google-auth-library
+    if (process.env.GOOGLE_CLIENT_ID) {
+      try {
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+          idToken: credential,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+      } catch (err) {
+        console.warn("Google library verification notice, falling back to tokeninfo API:", err.message);
+      }
+    }
+
+    // Fallback/direct tokeninfo verification via Google OAuth API
+    if (!payload) {
+      const googleRes = await axios.get(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+      );
+      payload = googleRes.data;
+    }
+
+    if (!payload || !payload.email) {
+      return res.status(400).json({ error: "Invalid Google OAuth token." });
+    }
+
+    const cleanEmail = payload.email.trim().toLowerCase();
+    const name = payload.name || payload.given_name || cleanEmail.split("@")[0];
+
+    // Find or register user
+    let userResult = await pool.query(
+      "SELECT id, name, email, created_at FROM users WHERE LOWER(email) = $1",
+      [cleanEmail]
+    );
+
+    let user;
+    if (userResult.rows.length === 0) {
+      const randomPassword = await bcrypt.hash(`google_oauth_${Date.now()}_${Math.random()}`, 10);
+      const newUserRes = await pool.query(
+        "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, created_at",
+        [name, cleanEmail, randomPassword]
+      );
+      user = newUserRes.rows[0];
+    } else {
+      user = userResult.rows[0];
+    }
+
+    // Generate app JWT session token
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      message: "Google authentication successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        created_at: user.created_at,
+      },
+    });
+  } catch (err) {
+    console.error("Google Auth error:", err);
+    return res.status(401).json({ error: "Google authentication failed: " + (err.response?.data?.error_description || err.message) });
   }
 });
 

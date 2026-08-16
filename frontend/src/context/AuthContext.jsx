@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { loginApi, signupApi, getMeApi } from '../api';
+import { loginApi, signupApi, googleLoginApi, getMeApi } from '../api';
 
 const AuthContext = createContext(null);
 
@@ -73,6 +73,16 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
+  const googleLogin = async (credential) => {
+    const res = await googleLoginApi(credential);
+    const { token: newToken, user: newUser } = res.data;
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem('buildsense_token', newToken);
+    localStorage.setItem('buildsense_user', JSON.stringify(newUser));
+    return res.data;
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -81,7 +91,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, isAuthenticated: !!user && !!token }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, googleLogin, logout, isAuthenticated: !!user && !!token }}>
       {children}
     </AuthContext.Provider>
   );
