@@ -6,6 +6,8 @@ import {
   getProjectAnalysis,
   getSentimentTrend,
   getProjectFeedback,
+  getCampaigns,
+  deleteCampaign,
   runFullAnalysis,
   analyzePostFeedback,
   updateProject,
@@ -31,7 +33,8 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Megaphone
 } from 'lucide-react';
 import {
   LineChart,
@@ -56,6 +59,7 @@ export default function ProjectDetail() {
   const [analysis, setAnalysis] = useState(null);
   const [trend, setTrend] = useState([]);
   const [feedbackList, setFeedbackList] = useState([]);
+  const [projectCampaigns, setProjectCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Full analysis
@@ -85,18 +89,20 @@ export default function ProjectDetail() {
 
   const loadAll = async () => {
     try {
-      const [projRes, sumRes, analRes, trendRes, fbRes] = await Promise.all([
+      const [projRes, sumRes, analRes, trendRes, fbRes, campRes] = await Promise.all([
         getProject(id),
         getProjectSummary(id),
         getProjectAnalysis(id),
         getSentimentTrend(id),
         getProjectFeedback(id),
+        getCampaigns(id),
       ]);
       setProject(projRes.data);
       setSummary(sumRes.data);
       setAnalysis(analRes.data);
       setTrend(Array.isArray(trendRes.data) ? trendRes.data : []);
       setFeedbackList(Array.isArray(fbRes.data) ? fbRes.data : []);
+      setProjectCampaigns(Array.isArray(campRes.data) ? campRes.data : []);
     } catch (err) {
       console.error("Load project detail error:", err);
       toast.error('Failed to load project details.');
@@ -185,6 +191,7 @@ export default function ProjectDetail() {
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
+    { key: 'campaigns', label: `Campaigns (${projectCampaigns.length})` },
     { key: 'analyze', label: 'Run AI Pipeline' },
     { key: 'feedback', label: `Feedback (${feedbackList.length})` },
   ];
@@ -403,6 +410,26 @@ export default function ProjectDetail() {
                     </button>
                   </div>
                 )}
+
+                {/* Display Saved Roadmap Steps */}
+                {analysis?.last_roadmap && (
+                  <div className="mt-4 pt-4 border-t border-neutral-800 space-y-3">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Generated Project Roadmap
+                    </h4>
+                    {(analysis.last_roadmap.roadmap || analysis.last_roadmap.phases || []).map((step, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-black/60 border border-zinc-800 text-xs space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono font-bold text-[10px]">Step {step.step || i + 1}</span>
+                          <span className="font-bold text-white">{step.feature || step.title || step.name}</span>
+                        </div>
+                        {(step.reason || step.description) && (
+                          <p className="text-zinc-400 text-[11px]">{step.reason || step.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -429,6 +456,80 @@ export default function ProjectDetail() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── CAMPAIGNS TAB ─── */}
+      {activeTab === 'campaigns' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-white" />
+              Project Campaigns ({projectCampaigns.length})
+            </h3>
+            <Link
+              to="/campaigns"
+              className="px-3.5 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-xl transition-all shadow-md"
+            >
+              + Create Campaign
+            </Link>
+          </div>
+
+          {projectCampaigns.length === 0 ? (
+            <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-8 text-center backdrop-blur-xl">
+              <Megaphone className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-white">No campaigns linked to this project</h4>
+              <p className="text-xs text-zinc-400 mt-1 mb-4">Create a brand campaign attached to {project?.name || 'this project'}.</p>
+              <Link to="/campaigns" className="px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-xl text-xs font-semibold inline-block">
+                Go to Campaign Studio →
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {projectCampaigns.map((c) => (
+                <div key={c.id} className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 shadow-xl backdrop-blur-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white">{c.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-zinc-500">ID: #{c.id}</span>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm(`Delete campaign "${c.name}"?`)) {
+                            try {
+                              await deleteCampaign(c.id);
+                              toast.success('Campaign deleted');
+                              await loadAll();
+                            } catch (err) {
+                              console.error(err);
+                              toast.error('Failed to delete campaign');
+                            }
+                          }
+                        }}
+                        className="p-1 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        title="Delete campaign"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {c.brand_voice && (
+                    <p className="text-xs text-zinc-400">
+                      <span className="font-semibold text-zinc-300">Voice:</span> {c.brand_voice}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-800 text-[11px]">
+                    <div className="flex gap-2">
+                      {c.tone && <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">{c.tone}</span>}
+                      {c.niche && <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">{c.niche}</span>}
+                    </div>
+                    <Link to="/campaigns" className="text-xs text-white hover:underline font-medium">
+                      Generate Post Draft →
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

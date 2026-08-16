@@ -55,9 +55,10 @@ export const getProjectFeedback = (id) =>
   api.get(`/projects/${id}/feedback`);
 
 // ── Campaigns ──
+export const getCampaigns = (projectId) =>
+  api.get('/campaigns', { params: projectId ? { projectId } : {} });
 export const createCampaign = (data) => api.post('/campaigns', data);
-export const generateCampaignReply = (id, comment) =>
-  api.post(`/campaigns/${id}/reply`, { comment });
+export const deleteCampaign = (id) => api.delete(`/campaigns/${id}`);
 
 // ── Posts ──
 export const generatePost = (campaignId) =>

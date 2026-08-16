@@ -96,25 +96,17 @@ async function initDb() {
       );
     `);
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS comments (
-        id SERIAL PRIMARY KEY,
-        campaign_id INT REFERENCES campaigns(id) ON DELETE CASCADE,
-        username VARCHAR(255),
-        content TEXT,
-        ai_reply TEXT,
-        reply_status VARCHAR(50) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Ensure user_id column exists on analyses and campaigns
+    // Ensure user_id and project_id columns exist on analyses and campaigns
     await pool.query(`
       ALTER TABLE analyses ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
     `);
 
     await pool.query(`
       ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS project_id INT REFERENCES projects(id) ON DELETE CASCADE;
     `);
 
     // Assign any orphaned records (where user_id IS NULL) to demo user

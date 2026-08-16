@@ -62,10 +62,11 @@ export default function Roadmap() {
 
   const copyRoadmap = () => {
     if (!result) return;
-    const text = (result.phases || [])
+    const items = result.roadmap || result.phases || [];
+    const text = items
       .map(
         (p, i) =>
-          `Phase ${i + 1}: ${p.name || p.title}\n${p.timeline || ''}\n${p.description || ''}\nFeatures: ${(p.features || []).map((f) => (typeof f === 'string' ? f : f.name)).join(', ')}`
+          `Step ${p.step || i + 1}: ${p.feature || p.name || p.title}\n${p.reason || p.description || ''}\n${p.expected_impact ? `Impact: ${p.expected_impact}` : ''}`
       )
       .join('\n\n');
     navigator.clipboard.writeText(text);
@@ -74,8 +75,8 @@ export default function Roadmap() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const phases = result?.phases || [];
-  const hasPhases = phases.length > 0;
+  const phases = result?.roadmap || result?.phases || [];
+  const hasPhases = Array.isArray(phases) && phases.length > 0;
 
   return (
     <div className="space-y-8 animate-in fade-in">
@@ -145,7 +146,7 @@ export default function Roadmap() {
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-white flex items-center gap-2 tracking-tight">
               <Calendar className="w-4 h-4 text-zinc-300" />
-              Generated Product Timeline ({phases.length} Phases)
+              Generated Product Timeline ({phases.length} Steps)
             </h2>
             <button
               onClick={copyRoadmap}
@@ -156,9 +157,19 @@ export default function Roadmap() {
             </button>
           </div>
 
+          {result.summary && (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-zinc-200">
+              <span className="font-bold text-emerald-400 uppercase tracking-wider block mb-1">Strategic Overview</span>
+              {result.summary}
+            </div>
+          )}
+
           {hasPhases ? (
             <div className="space-y-4">
               {phases.map((phase, i) => {
+                const title = phase.feature || phase.name || phase.title || `Step ${phase.step || i + 1}`;
+                const reason = phase.reason || phase.description;
+                const impact = phase.expected_impact;
                 const featureList = phase.features || [];
 
                 return (
@@ -167,9 +178,9 @@ export default function Roadmap() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase bg-zinc-800 text-white border border-zinc-700">
-                            Phase {i + 1}
+                            Step {phase.step || i + 1}
                           </span>
-                          <h3 className="text-base font-bold text-white tracking-tight">{phase.name || phase.title || `Phase ${i + 1}`}</h3>
+                          <h3 className="text-base font-bold text-white tracking-tight">{title}</h3>
                         </div>
                         {phase.timeline && (
                           <p className="text-xs font-mono text-zinc-400 mt-1">Est. Timeline: {phase.timeline}</p>
@@ -177,12 +188,19 @@ export default function Roadmap() {
                       </div>
                     </div>
 
-                    {phase.description && (
-                      <p className="text-xs text-zinc-400 mb-4">{phase.description}</p>
+                    {reason && (
+                      <p className="text-xs text-zinc-300 mb-3">{reason}</p>
+                    )}
+
+                    {impact && (
+                      <div className="p-3 rounded-xl bg-black/60 border border-zinc-800 text-xs text-zinc-400">
+                        <span className="text-zinc-500 font-bold uppercase text-[10px] block mb-0.5">Expected Impact</span>
+                        <span className="text-zinc-200">{impact}</span>
+                      </div>
                     )}
 
                     {featureList.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-neutral-800">
+                      <div className="space-y-2 pt-3 mt-3 border-t border-neutral-800">
                         {featureList.map((f, j) => {
                           const fname = typeof f === 'string' ? f : f.name || f.feature;
                           return (
@@ -199,8 +217,8 @@ export default function Roadmap() {
               })}
             </div>
           ) : (
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 text-xs text-slate-300">
-              {JSON.stringify(result)}
+            <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 text-xs text-zinc-300 font-mono">
+              {JSON.stringify(result, null, 2)}
             </div>
           )}
         </div>
