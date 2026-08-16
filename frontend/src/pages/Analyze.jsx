@@ -81,48 +81,48 @@ export default function Analyze() {
       </div>
 
       {/* Analysis Form Card */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-            <Search className="w-4 h-4 text-indigo-400" />
+          <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+            <Search className="w-4 h-4 text-white" />
           </div>
-          <h2 className="text-base font-bold text-white">Execute Community Search</h2>
+          <h2 className="text-base font-bold text-white tracking-tight">Execute Community Search</h2>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
               Product Concept or Target Feature *
             </label>
             <input
               placeholder="e.g., AI Code Review Assistant, Notion alternative"
               value={form.productIdea}
               onChange={(e) => setForm({ ...form, productIdea: e.target.value })}
-              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+              className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
               Subreddit Filter (optional)
             </label>
             <input
               placeholder="e.g., SaaS, Startups, Webdev (default: all)"
               value={form.subreddit}
               onChange={(e) => setForm({ ...form, subreddit: e.target.value })}
-              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+              className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all"
             />
           </div>
 
           {/* Quick presets */}
           <div className="flex items-center gap-2 pt-1 flex-wrap">
-            <span className="text-xs text-slate-500 font-medium">Quick presets:</span>
+            <span className="text-xs text-zinc-400 font-medium">Quick presets:</span>
             {QUICK_PRESETS.map((p, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setForm({ productIdea: p.idea, subreddit: p.sub })}
-                className="text-[11px] bg-slate-800/80 hover:bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/60 transition-colors cursor-pointer"
+                className="text-[11px] bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1 rounded-lg border border-zinc-700/60 transition-colors cursor-pointer"
               >
                 {p.idea}
               </button>
@@ -132,16 +132,16 @@ export default function Analyze() {
           <button
             onClick={handleAnalyze}
             disabled={loading.run || !form.productIdea.trim()}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+            className="w-full py-3 bg-white hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-white/5 cursor-pointer"
           >
             {loading.run ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
                 Retrieving comments & compiling sentiment...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 text-black" />
                 Analyze Community Feedback
               </>
             )}
@@ -149,7 +149,7 @@ export default function Analyze() {
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
             {error}
           </div>
         )}
@@ -159,8 +159,8 @@ export default function Analyze() {
       {result && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Sentiment Breakdown */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-sm font-bold text-white mb-4">Sentiment Distribution</h3>
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
+            <h3 className="text-sm font-bold text-white mb-4 tracking-tight">Sentiment Distribution</h3>
             {sentimentData.length > 0 && sentimentData.some((d) => d.value > 0) ? (
               <>
                 <div className="mb-4">
@@ -185,30 +185,30 @@ export default function Analyze() {
                         <Cell key={index} fill={COLORS[index]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #334155', color: '#fff' }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid #27272a', color: '#fff' }} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </>
             ) : (
-              <p className="text-xs text-slate-400">No sentiment values computed.</p>
+              <p className="text-xs text-zinc-400">No sentiment values computed.</p>
             )}
           </div>
 
           {/* Key Insights Output */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-white">Extracted Insights</h3>
-            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">Comments Processed</span>
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl space-y-4">
+            <h3 className="text-sm font-bold text-white tracking-tight">Extracted Insights</h3>
+            <div className="p-3.5 rounded-xl bg-black/60 border border-zinc-800">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block mb-0.5">Comments Processed</span>
               <span className="text-xl font-bold text-white">{result.totalCommentsAnalyzed}</span>
             </div>
 
             {result.insights?.top_features && result.insights.top_features.length > 0 && (
               <div>
-                <span className="text-xs font-semibold text-slate-400 block mb-2">High Demand Features</span>
+                <span className="text-xs font-semibold text-zinc-400 block mb-2">High Demand Features</span>
                 <div className="flex flex-wrap gap-2">
                   {result.insights.top_features.map((f, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 text-xs border border-indigo-500/20 font-medium">
+                    <span key={i} className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-200 text-xs border border-zinc-700 font-medium">
                       {typeof f === 'string' ? f : f.feature || JSON.stringify(f)}
                     </span>
                   ))}
@@ -219,7 +219,7 @@ export default function Analyze() {
             {result.insights?.insights && (
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Key Summary</span>
-                <p className="text-xs text-slate-200 leading-relaxed">{result.insights.insights}</p>
+                <p className="text-xs text-zinc-200 leading-relaxed">{result.insights.insights}</p>
               </div>
             )}
           </div>
@@ -227,10 +227,10 @@ export default function Analyze() {
       )}
 
       {/* Historical Analyses List */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-indigo-400" />
+          <h2 className="text-base font-bold text-white flex items-center gap-2 tracking-tight">
+            <BarChart3 className="w-4 h-4 text-zinc-300" />
             Analysis History ({analyses.length})
           </h2>
         </div>
@@ -249,17 +249,17 @@ export default function Analyze() {
               <Link
                 key={a.id}
                 to={`/analyze/${a.id}`}
-                className="flex items-center justify-between p-4 rounded-xl bg-slate-800/30 hover:bg-slate-800/70 border border-slate-800/60 transition-all group"
+                className="flex items-center justify-between p-4 rounded-xl bg-black/40 hover:bg-black/80 border border-zinc-800/80 hover:border-zinc-700 transition-all group"
               >
                 <div className="flex-1 min-w-0 pr-4">
-                  <span className="text-sm font-semibold text-slate-200 group-hover:text-white block truncate">
+                  <span className="text-sm font-semibold text-zinc-200 group-hover:text-white block truncate">
                     {a.product_idea}
                   </span>
-                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-                    <span className="font-mono text-indigo-400">r/{a.subreddit || 'all'}</span>
+                  <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1">
+                    <span className="font-mono text-white font-medium">r/{a.subreddit || 'all'}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-500" />
+                      <Clock className="w-3 h-3 text-zinc-500" />
                       {new Date(a.created_at || Date.now()).toLocaleDateString()}
                     </span>
                   </div>
@@ -271,7 +271,7 @@ export default function Analyze() {
                     />
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 shrink-0 transition-colors" />
+                <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-white shrink-0 transition-colors" />
               </Link>
             ))}
           </div>

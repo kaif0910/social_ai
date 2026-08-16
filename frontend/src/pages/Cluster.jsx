@@ -95,13 +95,13 @@ export default function Cluster() {
       {/* Input Form Card */}
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
         {/* Toggle bar */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-950/60 border border-slate-800/80 rounded-xl mb-6 w-fit">
+        <div className="flex items-center gap-2 mb-4 p-1 rounded-xl bg-black/60 border border-zinc-800 w-fit">
           <button
             onClick={() => setMode('url')}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               mode === 'url'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Link2 className="w-3.5 h-3.5" />
@@ -111,8 +111,8 @@ export default function Cluster() {
             onClick={() => setMode('manual')}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               mode === 'manual'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
@@ -123,22 +123,22 @@ export default function Cluster() {
         <div className="space-y-4">
           {mode === 'url' ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                 Reddit Discussion URL *
               </label>
               <div className="relative">
-                <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   placeholder="https://www.reddit.com/r/SaaS/comments/..."
                   value={postUrl}
                   onChange={(e) => setPostUrl(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                  className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all"
                 />
               </div>
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                 User Feedback Lines (One per line) *
               </label>
               <textarea
@@ -146,7 +146,7 @@ export default function Cluster() {
                 value={commentsText}
                 onChange={(e) => setCommentsText(e.target.value)}
                 rows={6}
-                className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-3 text-xs text-slate-100 placeholder-slate-500 outline-none transition-all resize-none font-mono"
+                className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-3 text-xs text-white placeholder-zinc-500 outline-none transition-all resize-none font-mono"
               />
             </div>
           )}
@@ -154,16 +154,16 @@ export default function Cluster() {
           <button
             onClick={handleCluster}
             disabled={!canSubmit}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+            className="w-full py-3 bg-white hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-white/5 cursor-pointer"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
                 Processing feedback & clustering themes...
               </>
             ) : (
               <>
-                <GitBranch className="w-4 h-4" />
+                <GitBranch className="w-4 h-4 text-black" />
                 Cluster Feedback Themes
               </>
             )}
@@ -171,7 +171,7 @@ export default function Cluster() {
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -183,40 +183,40 @@ export default function Cluster() {
         <div className="space-y-6">
           {/* Summary Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="p-4 rounded-2xl bg-neutral-900/90 border border-neutral-800 flex items-center gap-3 backdrop-blur-xl">
+              <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white">
                 <Layers className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-xl font-bold text-white">{features.length}</p>
-                <p className="text-xs text-slate-400">Clustered Themes</p>
+                <p className="text-xs text-zinc-400">Clustered Themes</p>
               </div>
             </div>
             {totalComments && (
-              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+              <div className="p-4 rounded-2xl bg-neutral-900/90 border border-neutral-800 flex items-center gap-3 backdrop-blur-xl">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white">
                   <MessageSquare className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-xl font-bold text-white">{totalComments}</p>
-                  <p className="text-xs text-slate-400">Comments Scraped</p>
+                  <p className="text-xs text-zinc-400">Comments Scraped</p>
                 </div>
               </div>
             )}
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div className="p-4 rounded-2xl bg-neutral-900/90 border border-neutral-800 flex items-center gap-3 backdrop-blur-xl">
+              <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white">
                 <Hash className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-xl font-bold text-white">{features.reduce((sum, f) => sum + (f.mentions || 0), 0)}</p>
-                <p className="text-xs text-slate-400">Total Mention Count</p>
+                <p className="text-xs text-zinc-400">Total Mention Count</p>
               </div>
             </div>
           </div>
 
           {/* Top Actionable Recommendation */}
           {topPriority && (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-orange-500/10 border border-amber-500/20 flex items-start gap-3.5 shadow-sm">
+            <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-start gap-3.5 shadow-xl backdrop-blur-xl">
               <Star className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block mb-1">

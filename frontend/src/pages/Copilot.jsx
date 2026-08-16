@@ -105,17 +105,17 @@ export default function Copilot() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Post Generator */}
         <div className="space-y-6">
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                <Send className="w-4 h-4 text-indigo-400" />
+              <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                <Send className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-base font-bold text-white">Generate Social Post</h2>
+              <h2 className="text-base font-bold text-white tracking-tight">Generate Social Post</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                   Project / Product Concept *
                 </label>
                 <textarea
@@ -123,12 +123,12 @@ export default function Copilot() {
                   value={postForm.projectIdea}
                   onChange={(e) => setPostForm({ ...postForm, projectIdea: e.target.value })}
                   rows={2}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
+                  className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                   Feature Update or Announcement *
                 </label>
                 <textarea
@@ -136,18 +136,18 @@ export default function Copilot() {
                   value={postForm.update}
                   onChange={(e) => setPostForm({ ...postForm, update: e.target.value })}
                   rows={2}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
+                  className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                   Target Platform
                 </label>
                 <select
                   value={postForm.platform}
                   onChange={(e) => setPostForm({ ...postForm, platform: e.target.value })}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-all"
+                  className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition-all"
                 >
                   <option value="reddit">Reddit (r/SaaS, r/startups)</option>
                   <option value="twitter">Twitter / X Post</option>
@@ -159,16 +159,16 @@ export default function Copilot() {
               <button
                 onClick={handleGeneratePost}
                 disabled={loading.post || !postForm.projectIdea.trim() || !postForm.update.trim()}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+                className="w-full py-3 bg-white hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-white/5 cursor-pointer"
               >
                 {loading.post ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
                     Crafting post content...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 text-black" />
                     Generate Post Draft
                   </>
                 )}
@@ -182,15 +182,15 @@ export default function Copilot() {
 
           {/* Generated Post Result Card */}
           {generatedPost && (
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+            <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Generated Post Draft
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-white" /> Generated Post Draft
                 </span>
                 {postContent && (
                   <button
                     onClick={() => copyText(postContent, setCopiedPost)}
-                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
                     title="Copy post"
                   >
                     {copiedPost ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -199,15 +199,15 @@ export default function Copilot() {
               </div>
 
               {postContent ? (
-                <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
+                <div className="p-4 rounded-xl bg-black/80 border border-zinc-800 text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap font-sans">
                   {postContent}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {Object.entries(generatedPost).map(([key, val]) => (
-                    <div key={key} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">{key.replace(/_/g, ' ')}</span>
-                      <p className="text-xs text-slate-200">{typeof val === 'string' ? val : JSON.stringify(val)}</p>
+                    <div key={key} className="p-3 rounded-xl bg-black/60 border border-zinc-800">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase block mb-1">{key.replace(/_/g, ' ')}</span>
+                      <p className="text-xs text-zinc-200">{typeof val === 'string' ? val : JSON.stringify(val)}</p>
                     </div>
                   ))}
                 </div>
@@ -218,32 +218,32 @@ export default function Copilot() {
 
         {/* Right Column: Smart Replies Generator */}
         <div className="space-y-6">
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                <MessageSquare className="w-4 h-4 text-violet-400" />
+              <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-base font-bold text-white">Smart Replies Copilot</h2>
+              <h2 className="text-base font-bold text-white tracking-tight">Smart Replies Copilot</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                   Reddit Post URL *
                 </label>
                 <div className="relative">
-                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                   <input
                     placeholder="https://www.reddit.com/r/SaaS/comments/..."
                     value={replyForm.postUrl}
                     onChange={(e) => setReplyForm({ ...replyForm, postUrl: e.target.value })}
-                    className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                    className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
                   Product / Feature Context *
                 </label>
                 <textarea
@@ -251,23 +251,23 @@ export default function Copilot() {
                   value={replyForm.featureContext}
                   onChange={(e) => setReplyForm({ ...replyForm, featureContext: e.target.value })}
                   rows={3}
-                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
+                  className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all resize-none"
                 />
               </div>
 
               <button
                 onClick={handleGenerateReplies}
                 disabled={loading.replies || !replyForm.postUrl.trim() || !replyForm.featureContext.trim()}
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-600/20 cursor-pointer"
+                className="w-full py-3 bg-white hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-white/5 cursor-pointer"
               >
                 {loading.replies ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
                     Parsing comments & writing responses...
                   </>
                 ) : (
                   <>
-                    <Bot className="w-4 h-4" />
+                    <Bot className="w-4 h-4 text-black" />
                     Generate Smart Replies
                   </>
                 )}
@@ -281,9 +281,9 @@ export default function Copilot() {
 
           {/* Generated Replies List */}
           {generatedReplies && (
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
-              <span className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Bot className="w-3.5 h-3.5" /> Generated Engagement Replies
+            <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl space-y-4">
+              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5 text-white" /> Generated Engagement Replies
               </span>
 
               <div className="space-y-3">
@@ -292,20 +292,20 @@ export default function Copilot() {
                     const comment = typeof r === 'object' ? r.comment : null;
                     const reply = typeof r === 'object' ? (r.reply || r.response || r.text) : r;
                     return (
-                      <div key={i} className="rounded-xl bg-slate-950/80 border border-slate-800 overflow-hidden">
+                      <div key={i} className="rounded-xl bg-black/80 border border-zinc-800 overflow-hidden">
                         {comment && (
-                          <div className="px-4 py-2.5 bg-slate-900/80 border-b border-slate-800 text-xs text-slate-400">
-                            <span className="font-semibold text-slate-300">Comment:</span> "{comment}"
+                          <div className="px-4 py-2.5 bg-neutral-900 border-b border-zinc-800 text-xs text-zinc-400">
+                            <span className="font-semibold text-zinc-200">Comment:</span> "{comment}"
                           </div>
                         )}
                         <div className="p-4 flex items-start justify-between gap-3">
                           <div className="flex-1">
-                            <span className="text-[10px] font-bold text-violet-400 uppercase block mb-1">Suggested Reply</span>
-                            <p className="text-xs text-slate-200 leading-relaxed">{reply || String(r)}</p>
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase block mb-1">Suggested Reply</span>
+                            <p className="text-xs text-zinc-200 leading-relaxed">{reply || String(r)}</p>
                           </div>
                           <button
                             onClick={() => copyText(reply || String(r), setCopiedReply, i)}
-                            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+                            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors shrink-0 cursor-pointer"
                           >
                             {copiedReply === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
@@ -314,7 +314,7 @@ export default function Copilot() {
                     );
                   })
                 ) : (
-                  <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-200">
+                  <div className="p-4 rounded-xl bg-black/80 border border-zinc-800 text-xs text-zinc-200">
                     {JSON.stringify(generatedReplies)}
                   </div>
                 )}
