@@ -1,8 +1,41 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
+
+// Attach JWT bearer token to every request if available
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('buildsense_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
+// Handle 401 Unauthorized globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear invalid token if unauthorized on a non-auth endpoint
+      const isAuthEndpoint = error.config.url?.includes('/auth/login') || error.config.url?.includes('/auth/signup');
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('buildsense_token');
+        localStorage.removeItem('buildsense_user');
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ── Auth APIs ──
+export const loginApi = (credentials) => api.post('/auth/login', credentials);
+export const signupApi = (userData) => api.post('/auth/signup', userData);
+export const getMeApi = () => api.get('/auth/me');
 
 // ── Projects CRUD ──
 export const getProjects = () => api.get('/projects');

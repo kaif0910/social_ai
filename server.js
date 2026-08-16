@@ -3,6 +3,8 @@ const cors = require("cors");
 require("dotenv").config();
 
 // ── Route imports ──
+const initDb = require("./src/db/initDb");
+const authRoutes = require("./src/auth/routes");
 const projectRoutes = require("./src/projects/routes");
 const analyzeRoutes = require("./src/analyze/routes");
 const postFeedbackRoutes = require("./src/postFeedback/routes");
@@ -16,6 +18,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 
+// Initialize database schema
+initDb();
+
 // ── Health check ──
 app.get("/", (req, res) => {
   res.json({
@@ -27,6 +32,7 @@ app.get("/", (req, res) => {
 });
 
 // ── API routes ──
+app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
 app.use("/analyze/post", postFeedbackRoutes); // must be before /analyze
 app.use("/analyze", analyzeRoutes);

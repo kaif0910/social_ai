@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { runAnalysis, getAnalyses } from '../api';
-import Card from '../components/Card';
 import SentimentBar from '../components/SentimentBar';
 import EmptyState from '../components/EmptyState';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useToast } from '../components/useToast';
-import { BarChart3, Search, ArrowRight, Clock, Loader2 } from 'lucide-react';
+import { BarChart3, Search, ArrowRight, Clock, Loader2, Sparkles, Tag, CheckCircle2 } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -16,7 +15,13 @@ import {
   Legend,
 } from 'recharts';
 
-const COLORS = ['#22c55e', '#eab308', '#ef4444'];
+const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
+
+const QUICK_PRESETS = [
+  { idea: 'AI Code Assistant for VS Code', sub: 'SaaS' },
+  { idea: 'Automated Social Media Scheduler', sub: 'marketing' },
+  { idea: 'Privacy focused Analytics Tool', sub: 'webdev' },
+];
 
 export default function Analyze() {
   const [form, setForm] = useState({ productIdea: '', subreddit: '' });
@@ -28,12 +33,13 @@ export default function Analyze() {
 
   useEffect(() => {
     getAnalyses()
-      .then((res) => setAnalyses(res.data))
-      .catch(console.error)
+      .then((res) => setAnalyses(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => console.error(err))
       .finally(() => setLoading((l) => ({ ...l, list: false })));
   }, []);
 
   const handleAnalyze = async () => {
+    if (!form.productIdea.trim()) return;
     setLoading((l) => ({ ...l, run: true }));
     setResult(null);
     setError(null);
@@ -41,9 +47,9 @@ export default function Analyze() {
       const res = await runAnalysis(form);
       setResult(res.data);
       setForm({ productIdea: '', subreddit: '' });
-      toast.success('Analysis completed successfully!', 'Feedback Analyzed');
+      toast.success('Market feedback analysis completed!');
       const listRes = await getAnalyses();
-      setAnalyses(listRes.data);
+      setAnalyses(Array.isArray(listRes.data) ? listRes.data : []);
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.error || 'Analysis failed. Please try again.';
@@ -56,94 +62,112 @@ export default function Analyze() {
 
   const sentimentData = result?.insights?.sentiment
     ? [
-        { name: 'Positive', value: result.insights.sentiment.positive },
-        { name: 'Neutral', value: result.insights.sentiment.neutral },
-        { name: 'Negative', value: result.insights.sentiment.negative },
+        { name: 'Positive', value: result.insights.sentiment.positive || 0 },
+        { name: 'Neutral', value: result.insights.sentiment.neutral || 0 },
+        { name: 'Negative', value: result.insights.sentiment.negative || 0 },
       ]
     : [];
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Feedback Analyzer</h1>
-          <p className="text-slate-400 mt-1">
-            Search Reddit for community feedback on your product ideas
-          </p>
-        </div>
+    <div className="space-y-8 animate-in fade-in">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          Market Feedback Analyzer
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Scrape Reddit discussions to extract community sentiment, feature demands, and user pain points.
+        </p>
       </div>
 
-      {/* Run Analysis */}
-      <Card className="mb-6">
+      {/* Analysis Form Card */}
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-            <Search className="w-4 h-4 text-indigo-400" />
+          <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+            <Search className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-lg font-semibold text-white">New Analysis</h3>
+          <h2 className="text-base font-bold text-white tracking-tight">Execute Community Search</h2>
         </div>
-        <div className="space-y-3">
+
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Product Idea *
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+              Product Concept or Target Feature *
             </label>
             <input
-              placeholder="e.g., AI writing assistant, meal planning app"
+              placeholder="e.g., AI Code Review Assistant, Notion alternative"
               value={form.productIdea}
-              onChange={(e) =>
-                setForm({ ...form, productIdea: e.target.value })
-              }
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+              onChange={(e) => setForm({ ...form, productIdea: e.target.value })}
+              className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Subreddit (optional)
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+              Subreddit Filter (optional)
             </label>
             <input
-              placeholder="e.g., SaaS, startups (default: all)"
+              placeholder="e.g., SaaS, Startups, Webdev (default: all)"
               value={form.subreddit}
-              onChange={(e) =>
-                setForm({ ...form, subreddit: e.target.value })
-              }
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+              onChange={(e) => setForm({ ...form, subreddit: e.target.value })}
+              className="w-full bg-black/60 border border-zinc-800 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-400/20 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all"
             />
           </div>
+
+          {/* Quick presets */}
+          <div className="flex items-center gap-2 pt-1 flex-wrap">
+            <span className="text-xs text-zinc-400 font-medium">Quick presets:</span>
+            {QUICK_PRESETS.map((p, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setForm({ productIdea: p.idea, subreddit: p.sub })}
+                className="text-[11px] bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1 rounded-lg border border-zinc-700/60 transition-colors cursor-pointer"
+              >
+                {p.idea}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={handleAnalyze}
-            disabled={loading.run || !form.productIdea}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            disabled={loading.run || !form.productIdea.trim()}
+            className="w-full py-3 bg-white hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-white/5 cursor-pointer"
           >
             {loading.run ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Searching Reddit & analyzing...
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+                Retrieving comments & compiling sentiment...
               </>
             ) : (
               <>
-                <Search className="w-4 h-4" />
-                Analyze Feedback
+                <Sparkles className="w-4 h-4 text-black" />
+                Analyze Community Feedback
               </>
             )}
           </button>
         </div>
+
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-red-400 text-sm">{error}</p>
+          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+            {error}
           </div>
         )}
-      </Card>
+      </div>
 
-      {/* Analysis Result */}
+      {/* Active Analysis Output Result */}
       {result && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card title="Sentiment Breakdown">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sentiment Breakdown */}
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
+            <h3 className="text-sm font-bold text-white mb-4 tracking-tight">Sentiment Distribution</h3>
             {sentimentData.length > 0 && sentimentData.some((d) => d.value > 0) ? (
               <>
                 <div className="mb-4">
                   <SentimentBar
-                    positive={result.insights.sentiment.positive}
-                    neutral={result.insights.sentiment.neutral}
-                    negative={result.insights.sentiment.negative}
+                    positive={result.insights?.sentiment?.positive || 0}
+                    neutral={result.insights?.sentiment?.neutral || 0}
+                    negative={result.insights?.sentiment?.negative || 0}
                   />
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
@@ -153,113 +177,106 @@ export default function Analyze() {
                       cx="50%"
                       cy="50%"
                       innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={5}
+                      outerRadius={80}
+                      paddingAngle={4}
                       dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}`}
                     >
                       {sentimentData.map((_, index) => (
                         <Cell key={index} fill={COLORS[index]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid #27272a', color: '#fff' }} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </>
             ) : (
-              <p className="text-slate-400 text-sm">No sentiment data</p>
+              <p className="text-xs text-zinc-400">No sentiment values computed.</p>
             )}
-          </Card>
+          </div>
 
-          <Card title="Analysis Results">
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-slate-700/50">
-                <p className="text-xs text-slate-400 mb-1">
-                  Comments Analyzed
-                </p>
-                <p className="text-2xl font-bold text-white">
-                  {result.totalCommentsAnalyzed}
-                </p>
-              </div>
-              {result.insights?.top_features &&
-                result.insights.top_features.length > 0 && (
-                  <div>
-                    <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">
-                      Top Features Mentioned
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {result.insights.top_features.map((f, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-300 text-xs font-medium border border-indigo-500/20"
-                        >
-                          {typeof f === 'string'
-                            ? f
-                            : f.feature || JSON.stringify(f)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              {result.insights?.insights && (
-                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <p className="text-xs text-green-400 font-semibold mb-2 uppercase tracking-wide">
-                    Key Insight
-                  </p>
-                  <p className="text-sm text-white leading-relaxed">
-                    {result.insights.insights}
-                  </p>
-                </div>
-              )}
+          {/* Key Insights Output */}
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl space-y-4">
+            <h3 className="text-sm font-bold text-white tracking-tight">Extracted Insights</h3>
+            <div className="p-3.5 rounded-xl bg-black/60 border border-zinc-800">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block mb-0.5">Comments Processed</span>
+              <span className="text-xl font-bold text-white">{result.totalCommentsAnalyzed}</span>
             </div>
-          </Card>
+
+            {result.insights?.top_features && result.insights.top_features.length > 0 && (
+              <div>
+                <span className="text-xs font-semibold text-zinc-400 block mb-2">High Demand Features</span>
+                <div className="flex flex-wrap gap-2">
+                  {result.insights.top_features.map((f, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-200 text-xs border border-zinc-700 font-medium">
+                      {typeof f === 'string' ? f : f.feature || JSON.stringify(f)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {result.insights?.insights && (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Key Summary</span>
+                <p className="text-xs text-zinc-200 leading-relaxed">{result.insights.insights}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Past Analyses */}
-      <Card title={`Past Analyses (${analyses.length})`}>
+      {/* Historical Analyses List */}
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-white flex items-center gap-2 tracking-tight">
+            <BarChart3 className="w-4 h-4 text-zinc-300" />
+            Analysis History ({analyses.length})
+          </h2>
+        </div>
+
         {loading.list ? (
-          <LoadingSpinner text="Loading analyses..." />
+          <LoadingSpinner message="Fetching past analysis history..." />
         ) : analyses.length === 0 ? (
           <EmptyState
             icon={BarChart3}
-            title="No analyses yet"
-            description="Run your first analysis above to see results here."
+            title="No past analyses"
+            description="Run a new search above to store community sentiment records."
           />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {analyses.map((a) => (
               <Link
                 key={a.id}
                 to={`/analyze/${a.id}`}
-                className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors group"
+                className="flex items-center justify-between p-4 rounded-xl bg-black/40 hover:bg-black/80 border border-zinc-800/80 hover:border-zinc-700 transition-all group"
               >
-                <div className="flex-1 min-w-0 mr-4">
-                  <p className="text-white font-medium text-sm truncate">
+                <div className="flex-1 min-w-0 pr-4">
+                  <span className="text-sm font-semibold text-zinc-200 group-hover:text-white block truncate">
                     {a.product_idea}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                    <span>r/{a.subreddit}</span>
+                  </span>
+                  <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1">
+                    <span className="font-mono text-white font-medium">r/{a.subreddit || 'all'}</span>
+                    <span>•</span>
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(a.created_at).toLocaleDateString()}
+                      <Clock className="w-3 h-3 text-zinc-500" />
+                      {new Date(a.created_at || Date.now()).toLocaleDateString()}
                     </span>
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2.5">
                     <SentimentBar
-                      positive={a.sentiment_positive}
-                      neutral={a.sentiment_neutral}
-                      negative={a.sentiment_negative}
+                      positive={a.sentiment_positive || 0}
+                      neutral={a.sentiment_neutral || 0}
+                      negative={a.sentiment_negative || 0}
                     />
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 shrink-0 transition-colors" />
+                <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-white shrink-0 transition-colors" />
               </Link>
             ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

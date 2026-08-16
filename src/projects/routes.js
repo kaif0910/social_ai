@@ -1,17 +1,22 @@
 const express = require("express");
 const pool = require("../db");
 const runFullAnalysis = require("../ai/runFullAnalysis");
+const { authenticateToken } = require("../middleware/auth");
 
 const router = express.Router();
 
+// Enforce authentication on all project routes
+router.use(authenticateToken);
+
 /**
  * GET /projects
- * List all projects
+ * List all projects for the logged-in user
  */
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, description, created_at FROM projects ORDER BY created_at DESC`
+      `SELECT id, name, description, created_at FROM projects WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.user.id]
     );
 
     res.json(result.rows);
@@ -23,7 +28,7 @@ router.get("/", async (req, res) => {
 
 /**
  * POST /projects
- * Create a new project
+ * Create a new project for the logged-in user
  */
 router.post("/", async (req, res) => {
   const { name, description } = req.body;
@@ -34,8 +39,8 @@ router.post("/", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO projects (name, description) VALUES ($1, $2) RETURNING *`,
-      [name, description || null]
+      `INSERT INTO projects (user_id, name, description) VALUES ($1, $2, $3) RETURNING *`,
+      [req.user.id, name, description || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -47,19 +52,19 @@ router.post("/", async (req, res) => {
 
 /**
  * GET /projects/:id
- * Get a single project by ID
+ * Get a single project by ID (scoped to owner)
  */
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
     const result = await pool.query(
-      `SELECT * FROM projects WHERE id = $1`,
-      [id]
+      `SELECT * FROM projects WHERE id = $1 AND user_id = $2`,
+      [id, req.user.id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
     }
 
     res.json(result.rows[0]);
@@ -71,7 +76,7 @@ router.get("/:id", async (req, res) => {
 
 /**
  * PUT /projects/:id
- * Update a project
+ * Update a project (scoped to owner)
  */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -83,12 +88,12 @@ router.put("/:id", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE projects SET name = $1, description = $2 WHERE id = $3 RETURNING *`,
-      [name, description || null, id]
+      `UPDATE projects SET name = $1, description = $2 WHERE id = $3 AND user_id = $4 RETURNING *`,
+      [name, description || null, id, req.user.id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
     }
 
     res.json(result.rows[0]);
@@ -100,24 +105,26 @@ router.put("/:id", async (req, res) => {
 
 /**
  * DELETE /projects/:id
- * Delete a project and its related data
+ * Delete a project and its related data (scoped to owner)
  */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Verify ownership first
+    const check = await pool.query("SELECT id FROM projects WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     // Delete related data first
     await pool.query("DELETE FROM post_feedback WHERE project_id = $1", [id]);
     await pool.query("DELETE FROM analyses WHERE project_id = $1", [id]);
 
     const result = await pool.query(
-      "DELETE FROM projects WHERE id = $1 RETURNING *",
-      [id]
+      "DELETE FROM projects WHERE id = $1 AND user_id = $2 RETURNING *",
+      [id, req.user.id]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Project not found" });
-    }
 
     res.json({ message: "Project deleted", project: result.rows[0] });
   } catch (err) {
@@ -128,12 +135,18 @@ router.delete("/:id", async (req, res) => {
 
 /**
  * GET /projects/:id/feedback
- * List all post feedback for a project
+ * List all post feedback for a project (scoped to owner)
  */
 router.get("/:id/feedback", async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Verify project ownership
+    const check = await pool.query("SELECT id FROM projects WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     const result = await pool.query(
       `SELECT * FROM post_feedback WHERE project_id = $1 ORDER BY created_at DESC`,
       [id]
@@ -159,18 +172,20 @@ router.post("/:id/full-analysis", async (req, res) => {
   }
 
   try {
+    const check = await pool.query("SELECT id FROM projects WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     const result = await runFullAnalysis(id, redditPostUrl);
     res.json(result);
   } catch (err) {
-  console.error("❌ Full analysis error:", err);
-
-  res.status(500).json({
-    error: "Failed to run full analysis",
-    realError: err.message,   // 👈 THIS IS THE KEY
-    stack: err.stack,         // optional but useful
-  });
-}
-
+    console.error("❌ Full analysis error:", err);
+    res.status(500).json({
+      error: "Failed to run full analysis",
+      realError: err.message,
+    });
+  }
 });
 
 /**
@@ -181,6 +196,11 @@ router.get("/:id/analysis", async (req, res) => {
   const { id } = req.params;
 
   try {
+    const check = await pool.query("SELECT id FROM projects WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     const result = await pool.query(
       `
       SELECT *
@@ -192,7 +212,6 @@ router.get("/:id/analysis", async (req, res) => {
       [id]
     );
 
-    // ✅ ALWAYS return JSON
     if (result.rows.length === 0) {
       return res.json({ last_roadmap: null });
     }
@@ -204,14 +223,12 @@ router.get("/:id/analysis", async (req, res) => {
     });
   } catch (err) {
     console.error("Get analysis error:", err);
-
     return res.status(500).json({
       error: "Failed to fetch analysis",
       realError: err.message,
     });
   }
 });
-
 
 /**
  * GET /projects/:id/summary
@@ -221,6 +238,11 @@ router.get("/:id/summary", async (req, res) => {
   const { id } = req.params;
 
   try {
+    const check = await pool.query("SELECT id FROM projects WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     const analysesCount = await pool.query(
       "SELECT COUNT(*) FROM analyses WHERE project_id = $1",
       [id]
@@ -287,6 +309,11 @@ router.get("/:id/sentiment-trend", async (req, res) => {
   const { id } = req.params;
 
   try {
+    const check = await pool.query("SELECT id FROM projects WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     const trend = await pool.query(
       `
       SELECT

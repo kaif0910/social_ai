@@ -55,10 +55,16 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const showToastFn = useCallback((message, type = 'info') => {
+    addToast({ type, message });
+  }, [addToast]);
+
   const toast = {
     success: (message, title) => addToast({ type: 'success', message, title }),
     error: (message, title) => addToast({ type: 'error', message, title }),
     info: (message, title) => addToast({ type: 'info', message, title }),
+    showToast: showToastFn,
+    addToast: showToastFn,
   };
 
   return (

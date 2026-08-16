@@ -2,8 +2,11 @@ const express = require("express");
 const pool = require("../db");
 const fetchPostComments = require("../reddit/fetchPostComments");
 const analyzePostFeedback = require("../ai/analyzePostFeedback");
+const { authenticateToken } = require("../middleware/auth");
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 /**
  * POST /analyze/post
@@ -18,6 +21,16 @@ router.post("/", async (req, res) => {
   }
 
   try {
+    // Verify project ownership
+    const projectCheck = await pool.query(
+      "SELECT id FROM projects WHERE id = $1 AND user_id = $2",
+      [projectId, req.user.id]
+    );
+
+    if (projectCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Project not found or unauthorized access" });
+    }
+
     // 1️⃣ fetch comments
     const comments = await fetchPostComments(postUrl);
 
