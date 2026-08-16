@@ -18,6 +18,8 @@ import {
   Trash2,
   ArrowRight,
   Search,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 
 export default function Projects() {
@@ -39,8 +41,11 @@ export default function Projects() {
   const loadProjects = () => {
     setLoading(true);
     getProjects()
-      .then((res) => setProjects(res.data))
-      .catch(console.error)
+      .then((res) => setProjects(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => {
+        console.error(err);
+        toast.error('Failed to load projects');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -77,6 +82,7 @@ export default function Projects() {
       loadProjects();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to save project');
     } finally {
       setSaving(false);
     }
@@ -92,6 +98,7 @@ export default function Projects() {
       loadProjects();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to delete project');
     } finally {
       setDeleting(false);
     }
@@ -103,56 +110,58 @@ export default function Projects() {
       (p.description || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner message="Loading workspace projects..." />;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div className="space-y-6 animate-in fade-in">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Projects</h1>
-          <p className="text-slate-400 mt-1">
-            Manage your projects and track feedback analysis
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Workspace Projects
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Organize feedback analysis pipelines, track feature requests, and run AI evaluations.
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors self-start"
+          className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          New Project
+          Create Project
         </button>
       </div>
 
-      {/* Search */}
+      {/* Filter / Search Control */}
       {projects.length > 0 && (
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
-            placeholder="Search projects..."
+            placeholder="Search projects by title or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-80 bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+            className="w-full sm:w-96 bg-slate-900/60 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
           />
         </div>
       )}
 
-      {/* Grid */}
+      {/* Projects Grid */}
       {filtered.length === 0 ? (
-        <Card>
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8">
           <EmptyState
             icon={FolderKanban}
-            title={search ? 'No matching projects' : 'No projects yet'}
+            title={search ? 'No matching projects found' : 'No projects yet'}
             description={
               search
-                ? 'Try a different search term'
-                : 'Create your first project to start analyzing feedback.'
+                ? 'Try broadening your search term.'
+                : 'Create your first project to start organizing feedback analyses.'
             }
             action={
               !search && (
                 <button
                   onClick={openCreate}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium inline-flex items-center gap-2 transition-colors"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium inline-flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Create Project
@@ -160,26 +169,27 @@ export default function Projects() {
               )
             }
           />
-        </Card>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((p) => (
-            <Link key={p.id} to={`/projects/${p.id}`} className="group">
-              <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500/50 transition-all hover:shadow-lg hover:shadow-indigo-500/5 h-full flex flex-col">
-                <div className="flex items-start justify-between mb-3">
+            <Link key={p.id} to={`/projects/${p.id}`} className="group block">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 hover:border-indigo-500/40 hover:bg-slate-900 transition-all duration-200 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 h-full flex flex-col relative overflow-hidden">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-white truncate">
+                    <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors truncate">
                       {p.name}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Created {new Date(p.created_at).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      <span>{new Date(p.created_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => openEdit(p, e)}
-                      className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-indigo-400 transition-colors"
-                      title="Edit"
+                      className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
+                      title="Edit project"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -189,21 +199,24 @@ export default function Projects() {
                         e.stopPropagation();
                         setDeleteConfirm(p);
                       }}
-                      className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-red-400 transition-colors"
-                      title="Delete"
+                      className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                      title="Delete project"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-                {p.description && (
-                  <p className="text-sm text-slate-400 mb-3 line-clamp-2 flex-1">
-                    {p.description}
-                  </p>
-                )}
-                <div className="flex items-center justify-end mt-auto pt-3 border-t border-slate-700/50">
-                  <span className="text-xs text-indigo-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                    View details <ArrowRight className="w-3 h-3" />
+
+                <p className="text-xs text-slate-400 line-clamp-2 flex-1 mb-4">
+                  {p.description || 'No project description provided.'}
+                </p>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 mt-auto">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    <Sparkles className="w-3 h-3" /> Active Pipeline
+                  </span>
+                  <span className="text-xs font-medium text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1 group-hover:translate-x-0.5 transition-all">
+                    Open Project <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </div>
@@ -216,88 +229,83 @@ export default function Projects() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingProject ? 'Edit Project' : 'New Project'}
+        title={editingProject ? 'Edit Project Details' : 'Create New Workspace Project'}
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
               Project Name *
             </label>
             <input
-              placeholder="e.g., AI Writing Assistant"
+              placeholder="e.g., AI Code Assistant"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
               Description
             </label>
             <textarea
-              placeholder="Brief description of your project..."
+              placeholder="Overview of project goals and community targets..."
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
               rows={3}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
             />
           </div>
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-3">
             <button
               onClick={() => setModalOpen(false)}
-              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !form.name.trim()}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
             >
               {saving
                 ? 'Saving...'
                 : editingProject
-                  ? 'Save Changes'
+                  ? 'Update Details'
                   : 'Create Project'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Delete confirmation modal */}
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
         title="Delete Project"
       >
-        <div>
-          <p className="text-slate-300 mb-2">
-            Are you sure you want to delete{' '}
-            <span className="text-white font-semibold">
-              {deleteConfirm?.name}
-            </span>
-            ?
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            Are you sure you want to delete <span className="text-white font-bold">{deleteConfirm?.name}</span>?
           </p>
-          <p className="text-sm text-red-400 mb-6">
-            This will also delete all analyses and feedback associated with this
-            project. This action cannot be undone.
-          </p>
-          <div className="flex gap-3">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+            This action will permanently delete all associated analyses and feedback logs.
+          </div>
+          <div className="flex gap-3 pt-2">
             <button
               onClick={() => setDeleteConfirm(null)}
-              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+              className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer"
             >
-              {deleting ? 'Deleting...' : 'Delete Project'}
+              {deleting ? 'Deleting...' : 'Confirm Delete'}
             </button>
           </div>
         </div>

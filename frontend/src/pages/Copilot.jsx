@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { copilotGeneratePost, copilotGenerateReplies } from '../api';
-import Card from '../components/Card';
+import { useToast } from '../components/useToast';
 import {
   Bot,
   Send,
@@ -9,10 +9,12 @@ import {
   Copy,
   Check,
   Sparkles,
-  LinkIcon,
+  LinkIcon
 } from 'lucide-react';
 
 export default function Copilot() {
+  const toast = useToast();
+
   // ── Generate Post ──
   const [postForm, setPostForm] = useState({
     projectIdea: '',
@@ -34,36 +36,38 @@ export default function Copilot() {
   const [copiedReply, setCopiedReply] = useState(null);
 
   const handleGeneratePost = async () => {
+    if (!postForm.projectIdea.trim() || !postForm.update.trim()) return;
     setLoading((l) => ({ ...l, post: true }));
     setGeneratedPost(null);
     setError((e) => ({ ...e, post: null }));
     try {
       const res = await copilotGeneratePost(postForm);
       setGeneratedPost(res.data);
+      toast.success('Social post content generated!');
     } catch (err) {
       console.error(err);
-      setError((e) => ({
-        ...e,
-        post: err.response?.data?.error || 'Failed to generate post',
-      }));
+      const msg = err.response?.data?.error || 'Failed to generate post';
+      setError((e) => ({ ...e, post: msg }));
+      toast.error(msg);
     } finally {
       setLoading((l) => ({ ...l, post: false }));
     }
   };
 
   const handleGenerateReplies = async () => {
+    if (!replyForm.postUrl.trim() || !replyForm.featureContext.trim()) return;
     setLoading((l) => ({ ...l, replies: true }));
     setGeneratedReplies(null);
     setError((e) => ({ ...e, replies: null }));
     try {
       const res = await copilotGenerateReplies(replyForm);
       setGeneratedReplies(res.data);
+      toast.success('Smart community replies generated!');
     } catch (err) {
       console.error(err);
-      setError((e) => ({
-        ...e,
-        replies: err.response?.data?.error || 'Failed to generate replies',
-      }));
+      const msg = err.response?.data?.error || 'Failed to generate replies';
+      setError((e) => ({ ...e, replies: msg }));
+      toast.error(msg);
     } finally {
       setLoading((l) => ({ ...l, replies: false }));
     }
@@ -72,6 +76,7 @@ export default function Copilot() {
   const copyText = (text, setter, val) => {
     navigator.clipboard.writeText(text);
     setter(val ?? true);
+    toast.success('Copied to clipboard!');
     setTimeout(() => setter(val === undefined ? false : null), 2000);
   };
 
@@ -79,321 +84,242 @@ export default function Copilot() {
     if (typeof data === 'string') return data;
     if (data?.post) return data.post;
     if (data?.content) return data.content;
-    if (data?.title && data?.body)
-      return `${data.title}\n\n${data.body}`;
+    if (data?.title && data?.body) return `${data.title}\n\n${data.body}`;
     return null;
   };
 
   const postContent = generatedPost ? extractPostContent(generatedPost) : null;
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white">AI Copilot</h1>
-          <p className="text-slate-400 mt-1">
-            Generate social media posts and smart replies powered by AI
-          </p>
-        </div>
+    <div className="space-y-8 animate-in fade-in">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          AI Content & Engagement Copilot
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Draft high-converting product announcements and generate intelligent replies to community feedback.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Generate Post */}
-        <div className="space-y-4">
-          <Card>
+        {/* Left Column: Post Generator */}
+        <div className="space-y-6">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
                 <Send className="w-4 h-4 text-indigo-400" />
               </div>
-              <h3 className="text-lg font-semibold text-white">
-                Generate Post
-              </h3>
+              <h2 className="text-base font-bold text-white">Generate Social Post</h2>
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Project Idea *
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Project / Product Concept *
                 </label>
                 <textarea
-                  placeholder="Describe your project idea..."
+                  placeholder="e.g., AI Code Assistant that suggests inline refactorings..."
                   value={postForm.projectIdea}
-                  onChange={(e) =>
-                    setPostForm({ ...postForm, projectIdea: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+                  onChange={(e) => setPostForm({ ...postForm, projectIdea: e.target.value })}
+                  rows={2}
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Update / Announcement *
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Feature Update or Announcement *
                 </label>
                 <textarea
-                  placeholder="New feature, launch, milestone..."
+                  placeholder="e.g., Added support for Python and TypeScript with 2x faster inline completions..."
                   value={postForm.update}
-                  onChange={(e) =>
-                    setPostForm({ ...postForm, update: e.target.value })
-                  }
+                  onChange={(e) => setPostForm({ ...postForm, update: e.target.value })}
                   rows={2}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Platform
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Target Platform
                 </label>
                 <select
                   value={postForm.platform}
-                  onChange={(e) =>
-                    setPostForm({ ...postForm, platform: e.target.value })
-                  }
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => setPostForm({ ...postForm, platform: e.target.value })}
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-all"
                 >
-                  <option value="reddit">Reddit</option>
-                  <option value="twitter">Twitter / X</option>
-                  <option value="linkedin">LinkedIn</option>
-                  <option value="hackernews">Hacker News</option>
+                  <option value="reddit">Reddit (r/SaaS, r/startups)</option>
+                  <option value="twitter">Twitter / X Post</option>
+                  <option value="linkedin">LinkedIn Update</option>
+                  <option value="hackernews">Hacker News Show HN</option>
                 </select>
               </div>
+
               <button
                 onClick={handleGeneratePost}
-                disabled={
-                  loading.post || !postForm.projectIdea || !postForm.update
-                }
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                disabled={loading.post || !postForm.projectIdea.trim() || !postForm.update.trim()}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
               >
                 {loading.post ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
+                    Crafting post content...
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Generate Post
+                    Generate Post Draft
                   </>
                 )}
               </button>
+
               {error.post && (
-                <p className="text-red-400 text-sm">{error.post}</p>
+                <p className="text-xs text-rose-400 mt-2">{error.post}</p>
               )}
             </div>
-          </Card>
+          </div>
 
-          {/* Generated Post Result */}
+          {/* Generated Post Result Card */}
           {generatedPost && (
-            <Card>
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
-                  <p className="text-sm text-indigo-400 font-semibold">
-                    Generated Content
-                  </p>
-                </div>
+                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Generated Post Draft
+                </span>
                 {postContent && (
                   <button
-                    onClick={() =>
-                      copyText(postContent, setCopiedPost)
-                    }
-                    className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition-colors"
+                    onClick={() => copyText(postContent, setCopiedPost)}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Copy post"
                   >
-                    {copiedPost ? (
-                      <Check className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
+                    {copiedPost ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                   </button>
                 )}
               </div>
+
               {postContent ? (
-                <div className="p-4 rounded-lg bg-slate-700/50 border border-slate-600/50">
-                  <p className="text-sm text-white whitespace-pre-wrap leading-relaxed">
-                    {postContent}
-                  </p>
+                <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
+                  {postContent}
                 </div>
               ) : (
-                /* Handle unexpected object shape gracefully */
                 <div className="space-y-2">
                   {Object.entries(generatedPost).map(([key, val]) => (
-                    <div key={key} className="p-3 rounded-lg bg-slate-700/50">
-                      <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide mb-1">
-                        {key.replace(/_/g, ' ')}
-                      </p>
-                      <p className="text-sm text-white">
-                        {typeof val === 'string'
-                          ? val
-                          : Array.isArray(val)
-                          ? val.join(', ')
-                          : String(val)}
-                      </p>
+                    <div key={key} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">{key.replace(/_/g, ' ')}</span>
+                      <p className="text-xs text-slate-200">{typeof val === 'string' ? val : JSON.stringify(val)}</p>
                     </div>
                   ))}
                 </div>
               )}
-            </Card>
+            </div>
           )}
         </div>
 
-        {/* Generate Replies */}
-        <div className="space-y-4">
-          <Card>
+        {/* Right Column: Smart Replies Generator */}
+        <div className="space-y-6">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <MessageSquare className="w-4 h-4 text-purple-400" />
+              <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 text-violet-400" />
               </div>
-              <h3 className="text-lg font-semibold text-white">
-                Smart Replies
-              </h3>
+              <h2 className="text-base font-bold text-white">Smart Replies Copilot</h2>
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Reddit Post URL *
                 </label>
                 <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
-                    placeholder="https://www.reddit.com/r/..."
+                    placeholder="https://www.reddit.com/r/SaaS/comments/..."
                     value={replyForm.postUrl}
-                    onChange={(e) =>
-                      setReplyForm({ ...replyForm, postUrl: e.target.value })
-                    }
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                    onChange={(e) => setReplyForm({ ...replyForm, postUrl: e.target.value })}
+                    className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
                   />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Feature Context *
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Product / Feature Context *
                 </label>
                 <textarea
-                  placeholder="What are you building / promoting?"
+                  placeholder="Context about what product features you are offering or explaining..."
                   value={replyForm.featureContext}
-                  onChange={(e) =>
-                    setReplyForm({
-                      ...replyForm,
-                      featureContext: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setReplyForm({ ...replyForm, featureContext: e.target.value })}
                   rows={3}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
                 />
               </div>
+
               <button
                 onClick={handleGenerateReplies}
-                disabled={
-                  loading.replies ||
-                  !replyForm.postUrl ||
-                  !replyForm.featureContext
-                }
-                className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                disabled={loading.replies || !replyForm.postUrl.trim() || !replyForm.featureContext.trim()}
+                className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-600/20 cursor-pointer"
               >
                 {loading.replies ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating replies...
+                    Parsing comments & writing responses...
                   </>
                 ) : (
                   <>
                     <Bot className="w-4 h-4" />
-                    Generate Replies
+                    Generate Smart Replies
                   </>
                 )}
               </button>
+
               {error.replies && (
-                <p className="text-red-400 text-sm">{error.replies}</p>
+                <p className="text-xs text-rose-400 mt-2">{error.replies}</p>
               )}
             </div>
-          </Card>
+          </div>
 
-          {/* Generated Replies Result */}
+          {/* Generated Replies List */}
           {generatedReplies && (
-            <Card>
-              <div className="flex items-center gap-2 mb-4">
-                <Bot className="w-4 h-4 text-purple-400" />
-                <p className="text-sm text-purple-400 font-semibold">
-                  Generated Replies (
-                  {Array.isArray(generatedReplies)
-                    ? generatedReplies.length
-                    : '1'}
-                  )
-                </p>
-              </div>
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
+              <span className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5" /> Generated Engagement Replies
+              </span>
+
               <div className="space-y-3">
                 {Array.isArray(generatedReplies) ? (
                   generatedReplies.map((r, i) => {
-                    const comment =
-                      typeof r === 'object' ? r.comment : null;
-                    const reply =
-                      typeof r === 'object'
-                        ? r.reply || r.response || r.text
-                        : r;
+                    const comment = typeof r === 'object' ? r.comment : null;
+                    const reply = typeof r === 'object' ? (r.reply || r.response || r.text) : r;
                     return (
-                      <div
-                        key={i}
-                        className="rounded-lg bg-slate-700/50 border border-slate-600/50 overflow-hidden"
-                      >
+                      <div key={i} className="rounded-xl bg-slate-950/80 border border-slate-800 overflow-hidden">
                         {comment && (
-                          <div className="px-4 py-2.5 bg-slate-700/80 border-b border-slate-600/30">
-                            <p className="text-xs text-slate-400 font-medium mb-0.5">
-                              Original Comment
-                            </p>
-                            <p className="text-sm text-slate-300 line-clamp-2">
-                              {comment}
-                            </p>
+                          <div className="px-4 py-2.5 bg-slate-900/80 border-b border-slate-800 text-xs text-slate-400">
+                            <span className="font-semibold text-slate-300">Comment:</span> "{comment}"
                           </div>
                         )}
-                        <div className="p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <p className="text-xs text-purple-400 font-medium mb-1">
-                                AI Reply
-                              </p>
-                              <p className="text-sm text-white leading-relaxed">
-                                {reply || String(r)}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() =>
-                                copyText(
-                                  reply || String(r),
-                                  setCopiedReply,
-                                  i
-                                )
-                              }
-                              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-600 transition-colors shrink-0"
-                            >
-                              {copiedReply === i ? (
-                                <Check className="w-3.5 h-3.5 text-green-400" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
+                        <div className="p-4 flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <span className="text-[10px] font-bold text-violet-400 uppercase block mb-1">Suggested Reply</span>
+                            <p className="text-xs text-slate-200 leading-relaxed">{reply || String(r)}</p>
                           </div>
+                          <button
+                            onClick={() => copyText(reply || String(r), setCopiedReply, i)}
+                            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+                          >
+                            {copiedReply === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
                         </div>
                       </div>
                     );
                   })
-                ) : typeof generatedReplies === 'object' ? (
-                  <div className="space-y-2">
-                    {Object.entries(generatedReplies).map(([key, val]) => (
-                      <div key={key} className="p-3 rounded-lg bg-slate-700/50">
-                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide mb-1">
-                          {key.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-sm text-white">
-                          {typeof val === 'string' ? val : String(val)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
                 ) : (
-                  <div className="p-4 rounded-lg bg-slate-700/50">
-                    <p className="text-sm text-white">{String(generatedReplies)}</p>
+                  <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-200">
+                    {JSON.stringify(generatedReplies)}
                   </div>
                 )}
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>

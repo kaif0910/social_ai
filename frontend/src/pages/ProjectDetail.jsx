@@ -11,11 +11,11 @@ import {
   updateProject,
   deleteProject,
 } from '../api';
-import Card from '../components/Card';
 import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
 import SentimentBar from '../components/SentimentBar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useToast } from '../components/useToast';
 import {
   ArrowLeft,
   BarChart3,
@@ -30,6 +30,8 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  Link as LinkIcon
 } from 'lucide-react';
 import {
   LineChart,
@@ -47,6 +49,7 @@ import {
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [project, setProject] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -92,10 +95,11 @@ export default function ProjectDetail() {
       setProject(projRes.data);
       setSummary(sumRes.data);
       setAnalysis(analRes.data);
-      setTrend(trendRes.data);
-      setFeedbackList(fbRes.data);
+      setTrend(Array.isArray(trendRes.data) ? trendRes.data : []);
+      setFeedbackList(Array.isArray(fbRes.data) ? fbRes.data : []);
     } catch (err) {
-      console.error(err);
+      console.error("Load project detail error:", err);
+      toast.error('Failed to load project details.');
     } finally {
       setLoading(false);
     }
@@ -113,12 +117,13 @@ export default function ProjectDetail() {
       const res = await runFullAnalysis(id, redditUrl);
       setAnalysisResult(res.data);
       setRedditUrl('');
+      toast.success('Full analysis pipeline completed!');
       await loadAll();
     } catch (err) {
       console.error(err);
-      setAnalysisResult({
-        error: err.response?.data?.error || 'Analysis failed',
-      });
+      const errorMsg = err.response?.data?.error || 'Analysis failed';
+      setAnalysisResult({ error: errorMsg });
+      toast.error(errorMsg);
     } finally {
       setRunningAnalysis(false);
     }
@@ -136,9 +141,11 @@ export default function ProjectDetail() {
       });
       setFbResult(res.data);
       setFbForm({ postUrl: '', featureContext: '' });
+      toast.success('Post feedback analysis completed!');
       await loadAll();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to analyze post feedback.');
     } finally {
       setFbLoading(false);
     }
@@ -151,8 +158,10 @@ export default function ProjectDetail() {
       const res = await updateProject(id, editForm);
       setProject(res.data);
       setEditModal(false);
+      toast.success('Project details updated!');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to update project.');
     } finally {
       setSaving(false);
     }
@@ -162,50 +171,55 @@ export default function ProjectDetail() {
     setDeleting(true);
     try {
       await deleteProject(id);
+      toast.success('Project deleted successfully.');
       navigate('/projects');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to delete project.');
     } finally {
       setDeleting(false);
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner message="Loading workspace project details..." />;
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
-    { key: 'analyze', label: 'Run Analysis' },
+    { key: 'analyze', label: 'Run AI Pipeline' },
     { key: 'feedback', label: `Feedback (${feedbackList.length})` },
   ];
 
   return (
-    <div>
-      {/* Back link */}
+    <div className="space-y-6 animate-in fade-in">
+      {/* Back breadcrumb */}
       <Link
         to="/projects"
-        className="text-slate-400 hover:text-white text-sm flex items-center gap-1 mb-4 transition-colors"
+        className="text-xs font-semibold text-slate-400 hover:text-indigo-400 inline-flex items-center gap-1.5 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Projects
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Back to Workspace Projects
       </Link>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
-          <h1 className="text-3xl font-bold text-white">
-            {project?.name || `Project #${id}`}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              {project?.name || `Project #${id}`}
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              Active Project
+            </span>
+          </div>
           {project?.description && (
-            <p className="text-slate-400 mt-1">{project.description}</p>
+            <p className="text-sm text-slate-400 mt-1 max-w-2xl">{project.description}</p>
           )}
-          <p className="text-xs text-slate-500 mt-1">
-            Created{' '}
-            {project?.created_at
-              ? new Date(project.created_at).toLocaleDateString()
-              : ''}
+          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-slate-500" />
+            Created {project?.created_at ? new Date(project.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'recently'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => {
               setEditForm({
@@ -214,14 +228,14 @@ export default function ProjectDetail() {
               });
               setEditModal(true);
             }}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm flex items-center gap-2 transition-colors"
+            className="px-3.5 py-2 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-200 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Pencil className="w-3.5 h-3.5" />
-            Edit
+            <Pencil className="w-3.5 h-3.5 text-indigo-400" />
+            Edit Details
           </button>
           <button
             onClick={() => setDeleteModal(true)}
-            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm flex items-center gap-2 transition-colors"
+            className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Delete
@@ -229,29 +243,29 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Summary Metrics Cards */}
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            label="Total Analyses"
+            label="Analyses Executed"
             value={summary.totalAnalyses}
             icon={BarChart3}
             color="indigo"
           />
           <StatCard
-            label="Feedback Posts"
+            label="Feedback Submissions"
             value={summary.totalFeedbackPosts}
             icon={MessageSquare}
             color="blue"
           />
           <StatCard
-            label="Agreement"
+            label="Agreement Count"
             value={summary.sentiment?.agreement || 0}
             icon={TrendingUp}
             color="green"
           />
           <StatCard
-            label="Disagreement"
+            label="Disagreement Count"
             value={summary.sentiment?.disagreement || 0}
             icon={AlertCircle}
             color="red"
@@ -259,16 +273,16 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-slate-800 rounded-xl p-1 border border-slate-700 mb-6">
+      {/* Nav Tabs */}
+      <div className="flex border-b border-slate-800/80 space-x-6">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-colors ${
+            className={`pb-3 text-sm font-semibold transition-all border-b-2 cursor-pointer ${
               activeTab === tab.key
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             {tab.label}
@@ -278,10 +292,11 @@ export default function ProjectDetail() {
 
       {/* ─── OVERVIEW TAB ─── */}
       {activeTab === 'overview' && (
-        <>
-          {/* Overall Sentiment Bar */}
-          {summary && (summary.sentiment?.agreement > 0 || summary.sentiment?.neutral > 0 || summary.sentiment?.disagreement > 0) && (
-            <Card title="Overall Sentiment Distribution" className="mb-6">
+        <div className="space-y-6">
+          {/* Sentiment Distribution Bar */}
+          {summary && (Number(summary.sentiment?.agreement) > 0 || Number(summary.sentiment?.neutral) > 0 || Number(summary.sentiment?.disagreement) > 0) && (
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+              <h3 className="text-sm font-bold text-white mb-3">Overall Sentiment Distribution</h3>
               <SentimentBar
                 positive={Number(summary.sentiment.agreement)}
                 neutral={Number(summary.sentiment.neutral)}
@@ -292,512 +307,307 @@ export default function ProjectDetail() {
                   negative: 'Disagreement',
                 }}
               />
-            </Card>
+            </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sentiment Trend Chart */}
-            <Card title="Sentiment Trend Over Time">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+              <h3 className="text-sm font-bold text-white mb-4">Sentiment Trend Timeline</h3>
               {trend.length === 0 ? (
-                <div className="text-center py-8">
-                  <TrendingUp className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-400 text-sm">
-                    No trend data yet. Analyze some posts to see trends.
-                  </p>
+                <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
+                  <TrendingUp className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <p className="text-slate-400 text-xs">No trend timeline available yet.</p>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={trend}>
                     <defs>
                       <linearGradient id="agreeGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="disagreeGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
                         <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#1e293b',
+                        backgroundColor: '#0f172a',
                         border: '1px solid #334155',
-                        borderRadius: '8px',
+                        borderRadius: '12px',
                         fontSize: '12px',
+                        color: '#f8fafc'
                       }}
                     />
                     <Legend />
-                    <Area type="monotone" dataKey="agreement" stroke="#22c55e" fill="url(#agreeGrad)" strokeWidth={2} />
-                    <Line type="monotone" dataKey="neutral" stroke="#eab308" strokeWidth={2} dot={false} />
+                    <Area type="monotone" dataKey="agreement" stroke="#10b981" fill="url(#agreeGrad)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="neutral" stroke="#f59e0b" strokeWidth={2} dot={false} />
                     <Area type="monotone" dataKey="disagreement" stroke="#ef4444" fill="url(#disagreeGrad)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
-            </Card>
+            </div>
 
-            {/* Latest Insights */}
-            <Card title="AI Insights">
+            {/* AI Insights Panel */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                Aggregated AI Insights
+              </h3>
               <div className="space-y-4">
                 {summary?.mostRequestedChange ? (
                   <>
-                    <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                      <div className="flex items-center gap-2 mb-1.5">
                         <AlertCircle className="w-4 h-4 text-indigo-400" />
-                        <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wide">
-                          Most Requested Change
+                        <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider">
+                          Top Requested Feature Change
                         </p>
                       </div>
-                      <p className="text-white">
+                      <p className="text-sm font-semibold text-slate-100">
                         {summary.mostRequestedChange.top_requested_change}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">
-                        Requested {summary.mostRequestedChange.count} time(s)
+                        Mentioned {summary.mostRequestedChange.count} time(s) across community posts
                       </p>
                     </div>
+
                     {summary.latestRecommendation && (
-                      <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Lightbulb className="w-4 h-4 text-green-400" />
-                          <p className="text-xs text-green-400 font-semibold uppercase tracking-wide">
-                            Recommended Next Feature
+                      <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <Lightbulb className="w-4 h-4 text-emerald-400" />
+                          <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider">
+                            Recommended Next Action
                           </p>
                         </div>
-                        <p className="text-white">
+                        <p className="text-sm font-semibold text-slate-100">
                           {summary.latestRecommendation.recommended_next_feature}
                         </p>
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="text-center py-6">
-                    <Lightbulb className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                    <p className="text-slate-400 text-sm">
-                      No insights yet. Run a post feedback analysis to generate
-                      insights.
-                    </p>
+                  <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl">
+                    <Lightbulb className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                    <p className="text-slate-400 text-xs">No AI insights generated yet.</p>
+                    <button
+                      onClick={() => setActiveTab('analyze')}
+                      className="text-xs text-indigo-400 hover:underline mt-1 cursor-pointer"
+                    >
+                      Run an analysis to generate insights →
+                    </button>
                   </div>
                 )}
               </div>
-            </Card>
+            </div>
           </div>
 
-          {/* Recent Feedback */}
+          {/* Feedback Entries Preview */}
           {feedbackList.length > 0 && (
-            <Card title="Recent Feedback Analyses">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-white">Recent Post Evaluations</h3>
+                <button onClick={() => setActiveTab('feedback')} className="text-xs font-semibold text-indigo-400 hover:text-indigo-300">
+                  View All ({feedbackList.length})
+                </button>
+              </div>
               <div className="space-y-3">
                 {feedbackList.slice(0, 3).map((fb) => (
-                  <div
-                    key={fb.id}
-                    className="p-4 rounded-lg bg-slate-700/50 border border-slate-600"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm truncate">
-                          {fb.feature_context}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {new Date(fb.created_at).toLocaleDateString()} &middot;{' '}
-                          <a
-                            href={fb.post_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-400 hover:underline"
-                          >
-                            View post
-                          </a>
-                        </p>
-                      </div>
+                  <div key={fb.id} className="p-4 rounded-xl bg-slate-800/40 border border-slate-800/80 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-xs font-bold text-slate-200">{fb.feature_context}</p>
+                      <a href={fb.post_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-400 hover:underline flex items-center gap-1 shrink-0">
+                        <LinkIcon className="w-3 h-3" /> Post Link
+                      </a>
                     </div>
-                    <SentimentBar
-                      positive={fb.agreement}
-                      neutral={fb.neutral}
-                      negative={fb.disagreement}
-                      labels={{
-                        positive: 'Agree',
-                        neutral: 'Neutral',
-                        negative: 'Disagree',
-                      }}
-                    />
-                    {fb.top_requested_change && (
-                      <p className="text-xs text-slate-400 mt-2">
-                        <span className="text-indigo-400 font-medium">
-                          Top change:
-                        </span>{' '}
-                        {fb.top_requested_change}
-                      </p>
-                    )}
+                    <SentimentBar positive={fb.agreement} neutral={fb.neutral} negative={fb.disagreement} />
                   </div>
                 ))}
-                {feedbackList.length > 3 && (
-                  <button
-                    onClick={() => setActiveTab('feedback')}
-                    className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-                  >
-                    View all {feedbackList.length} feedback entries
-                  </button>
-                )}
               </div>
-            </Card>
+            </div>
           )}
-
-          {/* Last Roadmap */}
-          {analysis?.last_roadmap && (
-            <Card title="Generated Roadmap" className="mt-6">
-              <pre className="text-sm text-slate-300 whitespace-pre-wrap overflow-auto max-h-96">
-                {JSON.stringify(analysis.last_roadmap, null, 2)}
-              </pre>
-            </Card>
-          )}
-        </>
+        </div>
       )}
 
       {/* ─── ANALYZE TAB ─── */}
       {activeTab === 'analyze' && (
-        <div className="space-y-6">
-          {/* Full Analysis */}
-          <Card title="Run Full AI Pipeline">
-            <p className="text-sm text-slate-400 mb-4">
-              Provide a Reddit post URL to run the full analysis pipeline:
-              comment extraction, sentiment analysis, feature clustering, and
-              roadmap generation.
-            </p>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={redditUrl}
-                onChange={(e) => setRedditUrl(e.target.value)}
-                placeholder="https://reddit.com/r/..."
-                className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-              />
-              <button
-                onClick={handleFullAnalysis}
-                disabled={runningAnalysis || !redditUrl.trim()}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                {runningAnalysis ? 'Running...' : 'Run Pipeline'}
-              </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Full Pipeline */}
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Play className="w-4 h-4 text-indigo-400" />
+                <h3 className="text-base font-bold text-white">Full AI Pipeline Analysis</h3>
+              </div>
+              <p className="text-xs text-slate-400 mb-4">
+                Provide a Reddit discussion URL to automatically extract comments, cluster feature feedback, and build a product roadmap.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={redditUrl}
+                  onChange={(e) => setRedditUrl(e.target.value)}
+                  placeholder="https://www.reddit.com/r/SaaS/comments/..."
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                />
+                <button
+                  onClick={handleFullAnalysis}
+                  disabled={runningAnalysis || !redditUrl.trim()}
+                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                >
+                  {runningAnalysis ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" /> Run Full AI Analysis
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
             {analysisResult && (
-              <div className="mt-4">
+              <div className="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs">
                 {analysisResult.error ? (
-                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <p className="text-red-400 text-sm">{analysisResult.error}</p>
-                  </div>
+                  <p className="text-rose-400">{analysisResult.error}</p>
                 ) : (
-                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-4 h-4 text-green-400" />
-                      <p className="text-green-400 font-medium text-sm">
-                        Analysis completed successfully
-                      </p>
-                    </div>
-                    <pre className="text-xs text-slate-300 whitespace-pre-wrap overflow-auto max-h-64 mt-2">
+                  <div>
+                    <span className="text-emerald-400 font-bold block mb-1">✓ Analysis Run Completed</span>
+                    <pre className="text-[11px] text-slate-300 overflow-auto max-h-48 whitespace-pre-wrap">
                       {JSON.stringify(analysisResult, null, 2)}
                     </pre>
                   </div>
                 )}
               </div>
             )}
-          </Card>
+          </div>
 
-          {/* Post Feedback Analyzer */}
-          <Card title="Analyze Post Feedback">
-            <p className="text-sm text-slate-400 mb-4">
-              Analyze a specific Reddit post to gauge community reaction to a
-              feature you shipped or announced.
-            </p>
-            <div className="space-y-3">
-              <input
-                placeholder="Reddit post URL"
-                value={fbForm.postUrl}
-                onChange={(e) =>
-                  setFbForm({ ...fbForm, postUrl: e.target.value })
-                }
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-              />
-              <textarea
-                placeholder="Feature context (what was announced / shipped)"
-                value={fbForm.featureContext}
-                onChange={(e) =>
-                  setFbForm({ ...fbForm, featureContext: e.target.value })
-                }
-                rows={3}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
-              />
-              <button
-                onClick={handlePostFeedback}
-                disabled={
-                  fbLoading ||
-                  !fbForm.postUrl.trim() ||
-                  !fbForm.featureContext.trim()
-                }
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-              >
-                <MessageSquare className="w-4 h-4" />
-                {fbLoading ? 'Analyzing...' : 'Analyze Feedback'}
-              </button>
+          {/* Feature Post Feedback Analyzer */}
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-violet-400" />
+                <h3 className="text-base font-bold text-white">Post Sentiment Evaluation</h3>
+              </div>
+              <p className="text-xs text-slate-400 mb-4">
+                Evaluate community sentiment for a specific feature announcement or product update.
+              </p>
+
+              <div className="space-y-3">
+                <input
+                  placeholder="Reddit post URL"
+                  value={fbForm.postUrl}
+                  onChange={(e) => setFbForm({ ...fbForm, postUrl: e.target.value })}
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                />
+                <textarea
+                  placeholder="Feature context (e.g. Launched new dark mode toggle and faster search)..."
+                  value={fbForm.featureContext}
+                  onChange={(e) => setFbForm({ ...fbForm, featureContext: e.target.value })}
+                  rows={3}
+                  className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
+                />
+                <button
+                  onClick={handlePostFeedback}
+                  disabled={fbLoading || !fbForm.postUrl.trim() || !fbForm.featureContext.trim()}
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-50 text-slate-100 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  {fbLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <MessageSquare className="w-4 h-4 text-violet-400" /> Evaluate Post Reactions
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {fbResult && (
-              <div className="mt-6 space-y-4">
-                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <p className="text-green-400 font-medium text-sm">
-                      Feedback analysis complete
-                    </p>
-                  </div>
-                  {fbResult.sentiment && (
-                    <SentimentBar
-                      positive={fbResult.sentiment.agreement}
-                      neutral={fbResult.sentiment.neutral}
-                      negative={fbResult.sentiment.disagreement}
-                      labels={{
-                        positive: 'Agree',
-                        neutral: 'Neutral',
-                        negative: 'Disagree',
-                      }}
-                    />
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {fbResult.top_requested_change && (
-                    <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                      <p className="text-xs text-indigo-400 font-medium mb-1">
-                        Top Requested Change
-                      </p>
-                      <p className="text-white text-sm">
-                        {fbResult.top_requested_change}
-                      </p>
-                    </div>
-                  )}
-                  {fbResult.recommended_next_feature && (
-                    <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                      <p className="text-xs text-green-400 font-medium mb-1">
-                        Recommended Next Feature
-                      </p>
-                      <p className="text-white text-sm">
-                        {fbResult.recommended_next_feature}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {fbResult.confusions && fbResult.confusions.length > 0 && (
-                  <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                    <p className="text-xs text-yellow-400 font-medium mb-2">
-                      User Confusions
-                    </p>
-                    <ul className="space-y-1">
-                      {fbResult.confusions.map((c, i) => (
-                        <li
-                          key={i}
-                          className="text-sm text-slate-300 pl-3 border-l-2 border-yellow-500/30"
-                        >
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-3">
+                <span className="text-emerald-400 font-bold block">✓ Post Evaluated</span>
+                {fbResult.sentiment && (
+                  <SentimentBar
+                    positive={fbResult.sentiment.agreement}
+                    neutral={fbResult.sentiment.neutral}
+                    negative={fbResult.sentiment.disagreement}
+                  />
                 )}
               </div>
             )}
-          </Card>
+          </div>
         </div>
       )}
 
       {/* ─── FEEDBACK TAB ─── */}
       {activeTab === 'feedback' && (
-        <div>
+        <div className="space-y-4">
           {feedbackList.length === 0 ? (
-            <Card>
-              <div className="text-center py-12">
-                <MessageSquare className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  No feedback yet
-                </h3>
-                <p className="text-sm text-slate-400 mb-4">
-                  Go to the "Run Analysis" tab to analyze post feedback.
-                </p>
-                <button
-                  onClick={() => setActiveTab('analyze')}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  Analyze Feedback
-                </button>
-              </div>
-            </Card>
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 text-center">
+              <MessageSquare className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+              <h3 className="text-sm font-bold text-white">No feedback records found</h3>
+              <p className="text-xs text-slate-400 mt-1 mb-4">Run an analysis to inspect community reactions.</p>
+              <button onClick={() => setActiveTab('analyze')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer">
+                Run First Analysis
+              </button>
+            </div>
           ) : (
             <div className="space-y-3">
-              {feedbackList.map((fb) => {
-                const isExpanded = expandedFb === fb.id;
-                const confusions =
-                  typeof fb.confusions === 'string'
-                    ? JSON.parse(fb.confusions)
-                    : fb.confusions;
-
-                return (
-                  <div
-                    key={fb.id}
-                    className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"
-                  >
-                    <button
-                      onClick={() =>
-                        setExpandedFb(isExpanded ? null : fb.id)
-                      }
-                      className="w-full p-5 text-left hover:bg-slate-750 transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium">
-                            {fb.feature_context}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {new Date(fb.created_at).toLocaleDateString()}
-                            </span>
-                            <a
-                              href={fb.post_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-indigo-400 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              View post
-                            </a>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 ml-4">
-                          <div className="flex gap-3 text-xs">
-                            <span className="text-green-400 font-medium">
-                              +{fb.agreement}
-                            </span>
-                            <span className="text-yellow-400 font-medium">
-                              ~{fb.neutral}
-                            </span>
-                            <span className="text-red-400 font-medium">
-                              -{fb.disagreement}
-                            </span>
-                          </div>
-                          {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 text-slate-500" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-slate-500" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <SentimentBar
-                          positive={fb.agreement}
-                          neutral={fb.neutral}
-                          negative={fb.disagreement}
-                          labels={{
-                            positive: 'Agree',
-                            neutral: 'Neutral',
-                            negative: 'Disagree',
-                          }}
-                        />
-                      </div>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="px-5 pb-5 pt-2 border-t border-slate-700 space-y-3">
-                        {fb.top_requested_change && (
-                          <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                            <p className="text-xs text-indigo-400 font-medium mb-1">
-                              Top Requested Change
-                            </p>
-                            <p className="text-white text-sm">
-                              {fb.top_requested_change}
-                            </p>
-                          </div>
-                        )}
-                        {fb.recommended_next_feature && (
-                          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                            <p className="text-xs text-green-400 font-medium mb-1">
-                              Recommended Next Feature
-                            </p>
-                            <p className="text-white text-sm">
-                              {fb.recommended_next_feature}
-                            </p>
-                          </div>
-                        )}
-                        {confusions && confusions.length > 0 && (
-                          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                            <p className="text-xs text-yellow-400 font-medium mb-2">
-                              User Confusions
-                            </p>
-                            <ul className="space-y-1">
-                              {confusions.map((c, i) => (
-                                <li
-                                  key={i}
-                                  className="text-sm text-slate-300 pl-3 border-l-2 border-yellow-500/30"
-                                >
-                                  {c}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
+              {feedbackList.map((fb) => (
+                <div key={fb.id} className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{fb.feature_context}</h4>
+                      <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                        <span>{new Date(fb.created_at || Date.now()).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <a href={fb.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
+                          View original post ↗
+                        </a>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-mono shrink-0">
+                      <span className="text-emerald-400">+{fb.agreement || 0}</span>
+                      <span className="text-amber-400">~{fb.neutral || 0}</span>
+                      <span className="text-rose-400">-{fb.disagreement || 0}</span>
+                    </div>
                   </div>
-                );
-              })}
+                  <SentimentBar positive={fb.agreement} neutral={fb.neutral} negative={fb.disagreement} />
+                </div>
+              ))}
             </div>
           )}
         </div>
       )}
 
       {/* Edit Modal */}
-      <Modal
-        isOpen={editModal}
-        onClose={() => setEditModal(false)}
-        title="Edit Project"
-      >
+      <Modal isOpen={editModal} onClose={() => setEditModal(false)} title="Edit Project Details">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Project Name *
-            </label>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Project Name *</label>
             <input
               value={editForm.name}
-              onChange={(e) =>
-                setEditForm({ ...editForm, name: e.target.value })
-              }
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-              autoFocus
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Description
-            </label>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Description</label>
             <textarea
               value={editForm.description}
-              onChange={(e) =>
-                setEditForm({ ...editForm, description: e.target.value })
-              }
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               rows={3}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none resize-none"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setEditModal(false)}
-              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleEdit}
-              disabled={saving || !editForm.name.trim()}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
-            >
+            <button onClick={() => setEditModal(false)} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium">Cancel</button>
+            <button onClick={handleEdit} disabled={saving || !editForm.name.trim()} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium">
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
@@ -805,33 +615,16 @@ export default function ProjectDetail() {
       </Modal>
 
       {/* Delete Modal */}
-      <Modal
-        isOpen={deleteModal}
-        onClose={() => setDeleteModal(false)}
-        title="Delete Project"
-      >
-        <div>
-          <p className="text-slate-300 mb-2">
-            Are you sure you want to delete{' '}
-            <span className="text-white font-semibold">{project?.name}</span>?
-          </p>
-          <p className="text-sm text-red-400 mb-6">
-            This will permanently delete all analyses and feedback for this
-            project.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setDeleteModal(false)}
-              className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
-            >
-              {deleting ? 'Deleting...' : 'Delete Project'}
+      <Modal isOpen={deleteModal} onClose={() => setDeleteModal(false)} title="Delete Project">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">Are you sure you want to delete <span className="text-white font-bold">{project?.name}</span>?</p>
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+            This will permanently remove all associated feedback logs.
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setDeleteModal(false)} className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium">Cancel</button>
+            <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-sm font-medium">
+              {deleting ? 'Deleting...' : 'Confirm Delete'}
             </button>
           </div>
         </div>

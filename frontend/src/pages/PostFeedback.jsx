@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { analyzePostFeedback, getProjects } from '../api';
-import Card from '../components/Card';
 import SentimentBar from '../components/SentimentBar';
 import EmptyState from '../components/EmptyState';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useToast } from '../components/useToast';
-import { MessageSquare, Search, Loader2, LinkIcon, Lightbulb, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { MessageSquare, Search, Loader2, LinkIcon, Lightbulb, AlertTriangle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 
 export default function PostFeedback() {
+  const toast = useToast();
   const [form, setForm] = useState({
     projectId: '',
     postUrl: '',
@@ -27,39 +28,43 @@ export default function PostFeedback() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
-  const toast = useToast();
 
   useEffect(() => {
     getProjects()
-      .then((res) => setProjects(res.data))
-      .catch(console.error);
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setProjects(list);
+        if (list.length > 0) {
+          setForm((f) => ({ ...f, projectId: String(list[0].id) }));
+        }
+      })
+      .catch((err) => console.error(err));
   }, []);
 
   const handleAnalyze = async () => {
+    if (!form.projectId || !form.postUrl.trim() || !form.featureContext.trim()) return;
     setLoading(true);
     setResult(null);
     setError(null);
     try {
       const res = await analyzePostFeedback(form);
       setResult(res.data);
-      toast.success('Post feedback analyzed!', 'Analysis Complete');
+      toast.success('Post feedback evaluated successfully!');
       setHistory((h) => [
         {
           ...res.data,
-          projectName:
-            projects.find((p) => String(p.id) === String(form.projectId))
-              ?.name || `Project #${form.projectId}`,
+          projectName: projects.find((p) => String(p.id) === String(form.projectId))?.name || `Project #${form.projectId}`,
           postUrl: form.postUrl,
+          featureContext: form.featureContext,
           analyzedAt: new Date().toISOString(),
         },
         ...h,
       ]);
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.error ||
-          'Failed to analyze. Check your inputs and try again.'
-      );
+      const msg = err.response?.data?.error || 'Failed to analyze post feedback.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -67,104 +72,87 @@ export default function PostFeedback() {
 
   const sentimentData = result?.sentiment
     ? [
-        {
-          name: 'Agreement',
-          value: result.sentiment.agreement,
-          color: '#22c55e',
-        },
-        { name: 'Neutral', value: result.sentiment.neutral, color: '#eab308' },
-        {
-          name: 'Disagreement',
-          value: result.sentiment.disagreement,
-          color: '#ef4444',
-        },
+        { name: 'Agreement', value: result.sentiment.agreement || 0, color: '#10b981' },
+        { name: 'Neutral', value: result.sentiment.neutral || 0, color: '#f59e0b' },
+        { name: 'Disagreement', value: result.sentiment.disagreement || 0, color: '#ef4444' },
       ]
     : [];
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Post Feedback</h1>
-          <p className="text-slate-400 mt-1">
-            Analyze community reactions to a specific Reddit post about your
-            feature
-          </p>
-        </div>
+    <div className="space-y-8 animate-in fade-in">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          Post Feedback Inspector
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Measure user consensus, confusions, and feature requests on specific Reddit announcements.
+        </p>
       </div>
 
-      {/* Analyze Form */}
-      <Card className="mb-6">
+      {/* Form Card */}
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-            <MessageSquare className="w-4 h-4 text-purple-400" />
+          <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+            <MessageSquare className="w-4 h-4 text-violet-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white">Analyze a Post</h3>
+          <h2 className="text-base font-bold text-white">Evaluate Post Reaction</h2>
         </div>
-        <div className="space-y-3">
+
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Project *
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Select Workspace Project *
             </label>
             <select
               value={form.projectId}
-              onChange={(e) =>
-                setForm({ ...form, projectId: e.target.value })
-              }
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+              onChange={(e) => setForm({ ...form, projectId: e.target.value })}
+              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-all"
             >
-              <option value="">Select a project...</option>
+              <option value="">Choose project workspace...</option>
               {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
               Reddit Post URL *
             </label>
             <div className="relative">
-              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
-                placeholder="https://www.reddit.com/r/subreddit/comments/..."
+                placeholder="https://www.reddit.com/r/SaaS/comments/..."
                 value={form.postUrl}
-                onChange={(e) =>
-                  setForm({ ...form, postUrl: e.target.value })
-                }
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                onChange={(e) => setForm({ ...form, postUrl: e.target.value })}
+                className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
               />
             </div>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Feature Context *
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Feature Context / Announcement *
             </label>
             <textarea
-              placeholder="Describe the feature being discussed (e.g., 'Dark mode for the mobile app')"
+              placeholder="e.g., Announced new dark mode UI and 2-factor authentication feature..."
               value={form.featureContext}
-              onChange={(e) =>
-                setForm({ ...form, featureContext: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, featureContext: e.target.value })}
               rows={3}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all resize-none"
             />
           </div>
+
           <button
             onClick={handleAnalyze}
-            disabled={
-              loading ||
-              !form.projectId ||
-              !form.postUrl ||
-              !form.featureContext
-            }
-            className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            disabled={loading || !form.projectId || !form.postUrl.trim() || !form.featureContext.trim()}
+            className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-600/20 cursor-pointer"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Fetching comments & analyzing...
+                Retrieving comments & parsing sentiment...
               </>
             ) : (
               <>
@@ -174,156 +162,51 @@ export default function PostFeedback() {
             )}
           </button>
         </div>
+
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-red-400 text-sm">{error}</p>
+          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+            {error}
           </div>
         )}
-      </Card>
+      </div>
 
-      {/* Result */}
+      {/* Analysis Output Result */}
       {result && (
-        <div className="space-y-6 mb-6">
-          {/* Sentiment Overview */}
-          <Card title="Sentiment Overview">
-            <div className="mb-4">
-              <SentimentBar
-                positive={result.sentiment?.agreement || 0}
-                neutral={result.sentiment?.neutral || 0}
-                negative={result.sentiment?.disagreement || 0}
-              />
-            </div>
-            {sentimentData.length > 0 && (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={sentimentData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {sentimentData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </Card>
+        <div className="space-y-6">
+          {/* Sentiment Bar */}
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-white mb-3">Community Consensus</h3>
+            <SentimentBar
+              positive={result.sentiment?.agreement || 0}
+              neutral={result.sentiment?.neutral || 0}
+              negative={result.sentiment?.disagreement || 0}
+              labels={{ positive: 'Agreement', neutral: 'Neutral', negative: 'Disagreement' }}
+            />
+          </div>
 
-          {/* Insights Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Requested Change */}
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {result.top_requested_change && (
-              <Card>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center shrink-0">
-                    <ArrowUpRight className="w-5 h-5 text-indigo-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-indigo-400 font-semibold mb-1 uppercase tracking-wide">
-                      Top Requested Change
-                    </p>
-                    <p className="text-white text-sm leading-relaxed">
-                      {result.top_requested_change}
-                    </p>
-                  </div>
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowUpRight className="w-4 h-4 text-indigo-400" />
+                  <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Top Requested Change</span>
                 </div>
-              </Card>
+                <p className="text-sm text-slate-200 font-medium">{result.top_requested_change}</p>
+              </div>
             )}
 
-            {/* Recommended Next Feature */}
             {result.recommended_next_feature && (
-              <Card>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
-                    <Lightbulb className="w-5 h-5 text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-green-400 font-semibold mb-1 uppercase tracking-wide">
-                      Recommended Next Feature
-                    </p>
-                    <p className="text-white text-sm leading-relaxed">
-                      {result.recommended_next_feature}
-                    </p>
-                  </div>
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Recommended Action</span>
                 </div>
-              </Card>
+                <p className="text-sm text-slate-200 font-medium">{result.recommended_next_feature}</p>
+              </div>
             )}
           </div>
-
-          {/* Confusions */}
-          {result.confusions && result.confusions.length > 0 && (
-            <Card>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">
-                  User Confusions ({result.confusions.length})
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {result.confusions.map((c, i) => (
-                  <div
-                    key={i}
-                    className="p-3 rounded-lg bg-yellow-500/5 border-l-2 border-yellow-500/40"
-                  >
-                    <p className="text-sm text-slate-300">{c}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
         </div>
-      )}
-
-      {/* Session History */}
-      {history.length > 0 && (
-        <Card title={`Session History (${history.length})`}>
-          <div className="space-y-2">
-            {history.map((h, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-lg bg-slate-700/50 border border-slate-600/50"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <p className="text-sm text-white font-medium">
-                    {h.projectName}
-                  </p>
-                  <span className="text-xs text-slate-500">
-                    {new Date(h.analyzedAt).toLocaleTimeString()}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 truncate mb-2">
-                  {h.postUrl}
-                </p>
-                {h.sentiment && (
-                  <SentimentBar
-                    positive={h.sentiment.agreement || 0}
-                    neutral={h.sentiment.neutral || 0}
-                    negative={h.sentiment.disagreement || 0}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {!result && history.length === 0 && (
-        <Card>
-          <EmptyState
-            icon={MessageSquare}
-            title="No feedback analyzed yet"
-            description="Select a project, paste a Reddit post URL, and describe the feature to get AI-powered feedback analysis."
-          />
-        </Card>
       )}
     </div>
   );
