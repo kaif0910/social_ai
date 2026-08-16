@@ -108,7 +108,25 @@ async function initDb() {
       );
     `);
 
-    console.log("✅ Database tables initialized successfully.");
+    // Ensure user_id column exists on analyses and campaigns
+    await pool.query(`
+      ALTER TABLE analyses ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE;
+    `);
+
+    // Assign any orphaned records (where user_id IS NULL) to demo user
+    const demoUser = await pool.query("SELECT id FROM users WHERE LOWER(email) = $1", [demoEmail]);
+    if (demoUser.rows.length > 0) {
+      const demoId = demoUser.rows[0].id;
+      await pool.query("UPDATE projects SET user_id = $1 WHERE user_id IS NULL", [demoId]);
+      await pool.query("UPDATE analyses SET user_id = $1 WHERE user_id IS NULL", [demoId]);
+      await pool.query("UPDATE campaigns SET user_id = $1 WHERE user_id IS NULL", [demoId]);
+    }
+
+    console.log("✅ Database tables initialized and user scoping updated successfully.");
   } catch (err) {
     console.error("⚠️ Database initialization notice:", err.message);
     console.log("💡 Ensure PostgreSQL is running and credentials in .env are correct.");

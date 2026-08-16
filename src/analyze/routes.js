@@ -1,8 +1,12 @@
 const express = require("express");
 const searchRedditComments = require("../reddit/searchPosts");
 const analyzeFeedback = require("../ai/analyzeFeedback");
+const { authenticateToken } = require("../middleware/auth");
+const pool = require("../db");
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 router.post("/", async (req, res) => {
   console.log("➡️ /analyze route hit");
@@ -36,24 +40,22 @@ router.post("/", async (req, res) => {
 
     console.log("✅ AI analysis done");
 
-    const pool = require("../db");
-
-// save to DB
-await pool.query(
-  `INSERT INTO analyses 
-  (product_idea, subreddit, sentiment_positive, sentiment_neutral, sentiment_negative, feature_clusters, insights)
-  VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-  [
-    productIdea,
-    subreddit || "all",
-    insights.sentiment?.positive ?? 0,
-    insights.sentiment?.neutral ?? 0,
-    insights.sentiment?.negative ?? 0,
-    JSON.stringify(insights.top_features || []),
-    insights.insights || insights.summary || "",
-  ]
-);
-
+    // save to DB with user_id
+    await pool.query(
+      `INSERT INTO analyses 
+      (user_id, product_idea, subreddit, sentiment_positive, sentiment_neutral, sentiment_negative, feature_clusters, insights)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [
+        req.user.id,
+        productIdea,
+        subreddit || "all",
+        insights.sentiment?.positive ?? 0,
+        insights.sentiment?.neutral ?? 0,
+        insights.sentiment?.negative ?? 0,
+        JSON.stringify(insights.top_features || []),
+        insights.insights || insights.summary || "",
+      ]
+    );
 
     res.json({
       totalCommentsAnalyzed: comments.length,
@@ -65,12 +67,11 @@ await pool.query(
   }
 });
 
-
 router.get("/", async (req, res) => {
-  const pool = require("../db");
   try {
     const result = await pool.query(
-        "SELECT * FROM analyses ORDER BY created_at DESC"
+      "SELECT * FROM analyses WHERE user_id = $1 ORDER BY created_at DESC",
+      [req.user.id]
     );
     res.json(result.rows);
   } catch (err) {
@@ -80,12 +81,11 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const pool = require("../db");
   const { id } = req.params;
   try {
-    const result = await pool.query("SELECT * FROM analyses WHERE id = $1", [id]);
+    const result = await pool.query("SELECT * FROM analyses WHERE id = $1 AND user_id = $2", [id, req.user.id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Analysis not found" });
+      return res.status(404).json({ error: "Analysis not found or unauthorized access" });
     }
     res.json(result.rows[0]);
   } catch (err) {
