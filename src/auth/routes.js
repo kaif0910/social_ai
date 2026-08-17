@@ -131,7 +131,7 @@ router.post("/google", async (req, res) => {
     // First attempt verification using google-auth-library
     if (process.env.GOOGLE_CLIENT_ID) {
       try {
-        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const client = new OAuth2Client({ clientId: process.env.GOOGLE_CLIENT_ID });
         const ticket = await client.verifyIdToken({
           idToken: credential,
           audience: process.env.GOOGLE_CLIENT_ID,
