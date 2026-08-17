@@ -19,7 +19,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       // Clear invalid token if unauthorized on a non-auth endpoint
-      const isAuthEndpoint = error.config.url?.includes('/auth/login') || error.config.url?.includes('/auth/signup');
+      const isAuthEndpoint = error.config.url?.includes('/auth/login') || error.config.url?.includes('/auth/signup') || error.config.url?.includes('/auth/google');
       if (!isAuthEndpoint) {
         localStorage.removeItem('buildsense_token');
         localStorage.removeItem('buildsense_user');

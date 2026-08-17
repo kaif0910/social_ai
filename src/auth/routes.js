@@ -125,10 +125,10 @@ router.post("/google", async (req, res) => {
     return res.status(400).json({ error: "Google credential token is required." });
   }
 
-  try {
-    let payload;
+  let payload;
 
-    // First attempt verification using google-auth-library
+  // 1️⃣ Verify Google ID Token
+  try {
     if (process.env.GOOGLE_CLIENT_ID) {
       try {
         const client = new OAuth2Client({ clientId: process.env.GOOGLE_CLIENT_ID });
@@ -137,23 +137,30 @@ router.post("/google", async (req, res) => {
           audience: process.env.GOOGLE_CLIENT_ID,
         });
         payload = ticket.getPayload();
-      } catch (err) {
-        console.warn("Google library verification notice, falling back to tokeninfo API:", err.message);
+      } catch (libraryErr) {
+        console.warn("Google library verification notice, falling back to tokeninfo API:", libraryErr.message);
       }
     }
 
-    // Fallback/direct tokeninfo verification via Google OAuth API
     if (!payload) {
       const googleRes = await axios.get(
         `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
       );
       payload = googleRes.data;
     }
+  } catch (verifyErr) {
+    console.error("Google token verification failed:", verifyErr.response?.data || verifyErr.message);
+    return res.status(401).json({
+      error: "Google token verification failed: " + (verifyErr.response?.data?.error_description || verifyErr.message),
+    });
+  }
 
-    if (!payload || !payload.email) {
-      return res.status(400).json({ error: "Invalid Google OAuth token." });
-    }
+  if (!payload || !payload.email) {
+    return res.status(400).json({ error: "Invalid Google OAuth token or missing email." });
+  }
 
+  // 2️⃣ Database Lookup & User Creation
+  try {
     const cleanEmail = payload.email.trim().toLowerCase();
     const name = payload.name || payload.given_name || cleanEmail.split("@")[0];
 
@@ -192,9 +199,9 @@ router.post("/google", async (req, res) => {
         created_at: user.created_at,
       },
     });
-  } catch (err) {
-    console.error("Google Auth error:", err);
-    return res.status(401).json({ error: "Google authentication failed: " + (err.response?.data?.error_description || err.message) });
+  } catch (dbErr) {
+    console.error("Google Auth Database Error:", dbErr);
+    return res.status(500).json({ error: "Database error during Google login: " + dbErr.message });
   }
 });
 
