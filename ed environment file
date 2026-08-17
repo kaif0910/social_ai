@@ -1,0 +1,29 @@
+[33mcommit c57c932b0cf0830bc1e764d26a08078f5b453c1f[m
+Author: kaif0910 <mdkaifperwez@gmail.com>
+Date:   Mon Aug 17 15:48:39 2026 +0530
+
+     final commit
+
+[33mcommit c0039cd10ccc9ead10d2be061379bdc388dd0618[m
+Author: kaif0910 <mdkaifperwez@gmail.com>
+Date:   Mon Aug 17 01:43:48 2026 +0530
+
+    oauth added
+
+[33mcommit 0f68252c6d67058ae37f1c1d173ba52f6eee5708[m
+Author: kaif0910 <mdkaifperwez@gmail.com>
+Date:   Sat Feb 7 18:22:13 2026 +0530
+
+    added feedback using the comments fetched from reddit using llm (groq) free api
+
+[33mcommit 693d6934f60d2e2ec2d5eaec5242bca557f3ef9c[m
+Author: kaif0910 <mdkaifperwez@gmail.com>
+Date:   Fri Feb 6 17:08:03 2026 +0530
+
+    feat: added reddit client to fetch comments to my posts
+
+[33mcommit 334c756c1dd90d8fd8e4ad004a9eec9fcccc9b57[m
+Author: kaif0910 <mdkaifperwez@gmail.com>
+Date:   Fri Feb 6 16:42:09 2026 +0530
+
+    init
