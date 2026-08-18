@@ -1,4 +1,4 @@
-# BuildSense AI 🚀
+# BuildSense AI 🚀 https://social-ai-hazel.vercel.app/
 ### AI-Powered Community Sentiment Analysis & Automated Product Roadmap Studio
 
 **BuildSense AI** (Social AI Manager) is an end-to-end AI platform designed for SaaS founders, product managers, and developers. It scrapes community discussions (e.g. Reddit subreddits and posts), runs advanced AI sentiment and feature clustering using Groq LLMs (Llama 3), generates actionable product roadmaps, evaluates live post feedback, and powers branded marketing campaigns directly tied to your workspace projects.

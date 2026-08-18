@@ -2,10 +2,14 @@
   "name": "social-ai-manager",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "dev:server": "node --watch server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
