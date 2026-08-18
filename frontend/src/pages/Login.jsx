@@ -64,9 +64,11 @@ export default function Login() {
       <div className="w-full max-w-md relative z-10">
         {/* Brand logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 mb-4 shadow-xl shadow-black/40">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="BuildSense Logo"
+            className="w-14 h-14 rounded-2xl object-cover border border-zinc-700/80 mb-4 mx-auto shadow-xl shadow-black/40"
+          />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Welcome back to <span className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">BuildSense</span>
           </h1>

@@ -102,11 +102,11 @@ export default function Layout() {
         {/* Sidebar Brand Header */}
         <div className="p-5 border-b border-neutral-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 p-0.5 shadow-lg shadow-black/40">
-              <div className="w-full h-full bg-black rounded-[10px] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-            </div>
+            <img
+              src="/logo.png"
+              alt="BuildSense Logo"
+              className="w-10 h-10 rounded-xl object-cover border border-zinc-700/80 shadow-lg shadow-black/40"
+            />
             <div>
               <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
                 BuildSense
